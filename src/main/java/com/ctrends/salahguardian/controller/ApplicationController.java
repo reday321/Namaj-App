@@ -310,7 +310,7 @@ public class ApplicationController implements PrayerEventListener {
         startupExecutor.submit(() -> {
             try {
                 var location = locationService.currentLocation();
-                LOG.info("Startup location: {} ({})", location.displayLabel(),
+                LOG.info("Startup location resolved ({}, {})", location.coarseLabel(),
                         location.source().displayName());
                 scheduleService.invalidate();
                 schedulerService.start();

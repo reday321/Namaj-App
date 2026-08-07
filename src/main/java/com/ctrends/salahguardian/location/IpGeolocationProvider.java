@@ -28,7 +28,7 @@ import java.util.Optional;
  * require no API key and answer over HTTPS:</p>
  * <ol>
  *   <li>{@code https://ipapi.co/json/}</li>
- *   <li>{@code http://ip-api.com/json/} (plain HTTP is the only free tier)</li>
+ *   <li>{@code https://ipwho.is/}</li>
  * </ol>
  *
  * <p>Accuracy is city level at best, which is entirely adequate for prayer
@@ -48,7 +48,16 @@ public class IpGeolocationProvider implements LocationProvider {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(8);
-    private static final String USER_AGENT = "SalahGuardian/1.0 (Linux desktop prayer reminder)";
+    /**
+     * Deliberately generic. The obvious value would name the application, but
+     * this request goes to a third-party data broker: announcing "prayer
+     * reminder" would disclose the user's religion alongside their IP address,
+     * which is special-category personal data under GDPR Article 9.
+     */
+    private static final String USER_AGENT = "Mozilla/5.0 (compatible)";
+
+    /** Real payloads are well under a kilobyte; anything larger is hostile. */
+    private static final int MAX_RESPONSE_BYTES = 64 * 1024;
 
     private final HttpClient httpClient;
     private final List<Endpoint> endpoints;
@@ -59,7 +68,10 @@ public class IpGeolocationProvider implements LocationProvider {
     public IpGeolocationProvider() {
         this(HttpClient.newBuilder()
                         .connectTimeout(CONNECT_TIMEOUT)
-                        .followRedirects(HttpClient.Redirect.NORMAL)
+                        // NEVER, not NORMAL: a redirect is another chance to be
+                        // steered somewhere unintended, and no legitimate
+                        // geolocation endpoint needs one.
+                        .followRedirects(HttpClient.Redirect.NEVER)
                         .build(),
                 defaultEndpoints());
     }
@@ -72,6 +84,15 @@ public class IpGeolocationProvider implements LocationProvider {
      * @param endpoints  the services to try, in order
      */
     public IpGeolocationProvider(HttpClient httpClient, List<Endpoint> endpoints) {
+        for (Endpoint endpoint : endpoints) {
+            if (!"https".equalsIgnoreCase(URI.create(endpoint.url()).getScheme())) {
+                // Fail closed at construction rather than at request time: a
+                // cleartext endpoint would let anyone on the path read the
+                // request and forge the reply, silently relocating the user.
+                throw new IllegalArgumentException(
+                        "Refusing a cleartext geolocation endpoint: " + endpoint.url());
+            }
+        }
         this.httpClient = httpClient;
         this.endpoints = List.copyOf(endpoints);
     }
@@ -93,8 +114,8 @@ public class IpGeolocationProvider implements LocationProvider {
         for (Endpoint endpoint : endpoints) {
             Optional<GeoLocation> location = query(endpoint);
             if (location.isPresent()) {
-                LOG.info("IP geolocation via {} resolved {}", endpoint.name(),
-                        location.get().displayLabel());
+                LOG.info("IP geolocation via {} produced a fix ({})", endpoint.name(),
+                        location.get().coarseLabel());
                 return location;
             }
         }
@@ -110,13 +131,23 @@ public class IpGeolocationProvider implements LocationProvider {
                     .header("User-Agent", USER_AGENT)
                     .GET()
                     .build();
-            HttpResponse<String> response =
-                    httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<java.io.InputStream> response =
+                    httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() / 100 != 2) {
                 LOG.debug("{} answered HTTP {}", endpoint.name(), response.statusCode());
                 return Optional.empty();
             }
-            return parse(response.body(), endpoint);
+            // Bounded read: ofString() would buffer whatever the server sends,
+            // so a hostile endpoint could exhaust memory and take the reminders
+            // down with it.
+            try (java.io.InputStream in = response.body()) {
+                byte[] bytes = in.readNBytes(MAX_RESPONSE_BYTES + 1);
+                if (bytes.length > MAX_RESPONSE_BYTES) {
+                    LOG.warn("{} returned an oversized body - discarding", endpoint.name());
+                    return Optional.empty();
+                }
+                return parse(new String(bytes, java.nio.charset.StandardCharsets.UTF_8), endpoint);
+            }
         } catch (IOException e) {
             LOG.debug("{} unreachable: {}", endpoint.name(), e.getMessage());
             return Optional.empty();
@@ -204,11 +235,14 @@ public class IpGeolocationProvider implements LocationProvider {
      * @return the endpoints to try, in priority order
      */
     public static List<Endpoint> defaultEndpoints() {
+        // Both HTTPS. The former plaintext ip-api.com endpoint was removed:
+        // its free tier offers no TLS, and an unauthenticated cleartext reply
+        // that decides when the user prays is not a reasonable thing to trust.
         return List.of(
                 new Endpoint("ipapi.co", "https://ipapi.co/json/",
                         "latitude", "longitude", "city", "country_name", "timezone"),
-                new Endpoint("ip-api.com", "http://ip-api.com/json/",
-                        "lat", "lon", "city", "country", "timezone"));
+                new Endpoint("ipwho.is", "https://ipwho.is/",
+                        "latitude", "longitude", "city", "country", "timezone"));
     }
 
     /**

@@ -305,7 +305,7 @@ public class SettingsViewModel {
         scheduleService.invalidate();
         schedulerService.reschedule();
         statusMessage.set(Messages.format("status.locationSet", location.displayLabel()));
-        LOG.info("Manual location applied: {}", location.coordinateLabel());
+        LOG.info("Manual location applied ({})", location.coarseLabel());
         return true;
     }
 

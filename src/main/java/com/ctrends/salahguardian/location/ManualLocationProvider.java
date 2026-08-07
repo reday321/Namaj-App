@@ -55,7 +55,7 @@ public class ManualLocationProvider implements LocationProvider {
             return Optional.empty();
         }
         GeoLocation stored = config.toGeoLocation();
-        LOG.info("Using the stored location {} ({})", stored.displayLabel(),
+        LOG.info("Using the stored location ({}, {})", stored.coarseLabel(),
                 stored.source().displayName());
         // Re-tag as CACHED unless the user typed it in themselves, so the
         // dashboard can be honest about where the coordinates came from.

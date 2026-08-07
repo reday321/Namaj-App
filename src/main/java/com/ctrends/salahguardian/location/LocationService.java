@@ -153,7 +153,7 @@ public class LocationService {
             config.setAutoDetectLocation(false);
         });
         current.set(manual);
-        LOG.info("Manual location set to {}", manual.coordinateLabel());
+        LOG.info("Manual location stored ({})", manual.coarseLabel());
         return manual;
     }
 
@@ -176,8 +176,9 @@ public class LocationService {
         boolean firstEver = !configService.get().hasStoredLocation();
         if (firstEver || stored.distanceKmTo(location) >= SIGNIFICANT_MOVE_KM) {
             configService.update(config -> config.applyLocation(location));
-            LOG.info("Persisted location {} from {}", location.coordinateLabel(),
+            LOG.info("Persisted location {} from {}", location.coarseLabel(),
                     location.source().displayName());
+            LOG.debug("Exact coordinates: {}", location.coordinateLabel());
         }
     }
 
