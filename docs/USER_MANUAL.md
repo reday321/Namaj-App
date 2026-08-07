@@ -40,7 +40,7 @@ your ISP's exit point, which is often a different city — fix it in
 
 | Area | What it shows |
 |---|---|
-| **Header** | The app name, plus the **Reminders**, **Silent** and **Settings** controls |
+| **Header** | The app name, plus the **EN / বাংলা** language toggle and the **Reminders**, **Silent** and **Settings** controls |
 | **Next prayer** | The upcoming prayer in English and Arabic, its time, and a live countdown. After Isha it rolls over to tomorrow's Fajr. |
 | **Current location** | Where the times are calculated for, the coordinates, and which method found them. **Detect again** re-runs detection. |
 | **Date** | Today's Gregorian and Hijri dates. A *Ramadan Mubarak* badge appears during Ramadan. |
@@ -211,8 +211,10 @@ Available methods:
 
 | Setting | Meaning |
 |---|---|
+| **Language** | *System default*, *English* or *বাংলা*. The same switch is on the dashboard header, which is usually quicker. |
+| **Use Bengali numerals** | Renders times and dates as ১২:০৫ rather than 12:05. Only available for Bengali. |
 | **Theme** | *Dark* (default), *Light*, or *Midnight* for night use |
-| **Use a 24 hour clock** | `18:42` versus `06:42 PM` |
+| **Use a 24 hour clock** | `18:42` versus `06:42 PM`. Off by default — a 12 hour clock is what most prayer timetables use. |
 | **Show the Hijri date** | The Islamic date on the dashboard |
 
 ### Startup
@@ -347,6 +349,11 @@ Above roughly 48° there are days when the sun never crosses the twilight angles
 Fajr, Maghrib and Isha have no astronomical definition. Salah Guardian then uses the
 *nearest latitude* (`aqrab al-bilad`) convention at 45° and tells you it has done so,
 rather than showing you an empty timetable.
+
+**How do I switch to Bengali?**
+Click **বাংলা** in the dashboard header. Everything changes at once — prayer names, dates, the Hijri calendar, notifications, the tray menu and settings. Click **EN** to switch back; both options stay visible precisely so you can always find your way back.
+
+Turn Bengali numerals (১২:০৫) on or off under **Settings → Appearance**.
 
 **Can I change the theme?**
 **Settings → Appearance → Theme**: *Dark*, *Light* or *Midnight*. It applies at once, to

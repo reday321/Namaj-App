@@ -424,3 +424,43 @@
     -fx-background-radius: 8;
     -fx-padding: 8 12 8 12;
 }
+
+/* ----- segmented toggle (language switch) -------------------------------- */
+/*
+ * Two buttons rendered as one pill: the container draws the border and the
+ * rounding, the segments draw only their own fill. Without stripping the
+ * segments' own radii the inner edges would show a seam.
+ */
+.segmented-toggle {
+    -fx-background-color: -sg-ghost-fill;
+    -fx-border-color: -sg-card-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 2;
+}
+
+.segmented-toggle .segment {
+    -fx-background-color: transparent;
+    -fx-text-fill: -sg-text-muted;
+    -fx-font-size: 12px;
+    -fx-padding: 4 12 4 12;
+    -fx-background-radius: 999;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+}
+
+.segmented-toggle .segment:hover {
+    -fx-text-fill: -sg-text-primary;
+    -fx-background-color: -sg-ghost-hover;
+}
+
+.segmented-toggle .segment:selected {
+    -fx-background-color: -sg-accent;
+    -fx-text-fill: -sg-on-accent;
+    -fx-font-weight: bold;
+}
+
+.segmented-toggle .segment:selected:hover {
+    -fx-background-color: -sg-accent-hover;
+}

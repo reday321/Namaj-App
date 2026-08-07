@@ -3,6 +3,7 @@ package com.ctrends.salahguardian.viewmodel;
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
 import com.ctrends.salahguardian.config.Theme;
+import com.ctrends.salahguardian.i18n.Language;
 import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.location.LocationService;
 import com.ctrends.salahguardian.model.DailyPrayerSchedule;
@@ -93,6 +94,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
     private final StringProperty approximationNotice = new SimpleStringProperty("");
     private final StringProperty statusMessage = new SimpleStringProperty("");
     private final ObjectProperty<Theme> theme = new SimpleObjectProperty<>(Theme.DARK);
+    private final ObjectProperty<Language> language = new SimpleObjectProperty<>(Language.ENGLISH);
 
     private final ExecutorService background = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "dashboard-background");
@@ -299,6 +301,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
         focusModeEnabled.set(config.isFocusModeEnabled());
         silentMode.set(config.isSilentMode());
         theme.set(config.themeOption());
+        language.set(effectiveLanguage(config.languageOption()));
     }
 
     // ----- toggles used by the tray menu and the dashboard header ------------
@@ -336,6 +339,46 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
         statusMessage.set(Messages.get(silent ? "status.silentOn" : "status.silentOff"));
     }
 
+    /**
+     * Switches the interface language and persists the choice.
+     *
+     * <p>Called by the header toggle. The window rebuild that follows is driven
+     * by {@code Messages}' own change listener, not from here, so the same path
+     * runs whether the language was changed from the dashboard or from
+     * Settings.</p>
+     *
+     * @param target the language to switch to
+     */
+    public void setLanguage(Language target) {
+        if (target == null || target == effectiveLanguage(configService.get().languageOption())) {
+            return;
+        }
+        configService.update(config -> config.setLanguage(target.name()));
+        Messages.setLanguage(target, configService.get().isUseLocalNumerals());
+        LOG.info("Interface language switched to {} from the dashboard", target.englishName());
+    }
+
+    /**
+     * Resolves {@link Language#SYSTEM} to the concrete language it currently
+     * means, so the header toggle can show which one is actually active.
+     *
+     * @param configured the stored preference
+     * @return a concrete language, never {@link Language#SYSTEM}
+     */
+    public static Language effectiveLanguage(Language configured) {
+        if (configured != null && configured != Language.SYSTEM) {
+            return configured;
+        }
+        String resolved = Language.SYSTEM.toLocale().getLanguage();
+        for (Language candidate : Language.values()) {
+            if (candidate != Language.SYSTEM
+                    && candidate.toLocale().getLanguage().equals(resolved)) {
+                return candidate;
+            }
+        }
+        return Language.ENGLISH;
+    }
+
     // ----- property accessors ----------------------------------------------
 
     public StringProperty locationLabelProperty() { return locationLabel; }
@@ -358,4 +401,5 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
     public BooleanProperty ramadanProperty() { return ramadan; }
     public StringProperty approximationNoticeProperty() { return approximationNotice; }
     public ObjectProperty<Theme> themeProperty() { return theme; }
+    public ObjectProperty<Language> languageProperty() { return language; }
 }

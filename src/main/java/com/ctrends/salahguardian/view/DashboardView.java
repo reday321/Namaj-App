@@ -1,6 +1,7 @@
 package com.ctrends.salahguardian.view;
 
 import com.ctrends.salahguardian.config.Theme;
+import com.ctrends.salahguardian.i18n.Language;
 import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.view.components.Card;
 import com.ctrends.salahguardian.view.components.PrayerRow;
@@ -17,7 +18,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
@@ -133,11 +136,65 @@ public class DashboardView {
         settings.getStyleClass().add("ghost-button");
         settings.setOnAction(event -> onOpenSettings.run());
 
-        HBox header = new HBox(12, titles, spacer, reminders, silent, settings);
+        HBox header = new HBox(12, titles, spacer, buildLanguageToggle(), reminders, silent, settings);
         header.getStyleClass().add("app-header");
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(20, 24, 16, 24));
         return header;
+    }
+
+    /**
+     * The EN / বাংলা switch in the header.
+     *
+     * <p>A two-segment control rather than a single cycling button, because it
+     * shows both options and which one is active at a glance - important when
+     * the rest of the interface is in a script the user may not read. Each
+     * segment is labelled in its <em>own</em> language for the same reason: a
+     * user who lands in Bengali by accident can still find "EN".</p>
+     *
+     * <p>Selecting the active segment again is a no-op: the group is left
+     * without an explicit deselect handler, and {@code setLanguage} ignores a
+     * switch to the language already in use.</p>
+     *
+     * @return the segmented language control
+     */
+    private Region buildLanguageToggle() {
+        ToggleGroup group = new ToggleGroup();
+
+        ToggleButton english = languageSegment("EN", Language.ENGLISH, group);
+        ToggleButton bengali = languageSegment("বাংলা", Language.BENGALI, group);
+        english.getStyleClass().add("segment-first");
+        bengali.getStyleClass().add("segment-last");
+
+        Runnable syncSelection = () -> {
+            Language active = viewModel.languageProperty().get();
+            group.selectToggle(active == Language.BENGALI ? bengali : english);
+        };
+        syncSelection.run();
+        viewModel.languageProperty().addListener((obs, was, is) -> syncSelection.run());
+
+        // A toggle group allows an empty selection when the user clicks the
+        // already-selected segment; restore it so the control always shows state.
+        group.selectedToggleProperty().addListener((obs, was, is) -> {
+            if (is == null) {
+                group.selectToggle(was);
+            }
+        });
+
+        HBox segmented = new HBox(english, bengali);
+        segmented.getStyleClass().add("segmented-toggle");
+        segmented.setAlignment(Pos.CENTER);
+        return segmented;
+    }
+
+    private ToggleButton languageSegment(String label, Language language, ToggleGroup group) {
+        ToggleButton segment = new ToggleButton(label);
+        segment.getStyleClass().add("segment");
+        segment.setToggleGroup(group);
+        segment.setFocusTraversable(false);
+        segment.setTooltip(new Tooltip(Messages.get("dashboard.tooltip.language")));
+        segment.setOnAction(event -> viewModel.setLanguage(language));
+        return segment;
     }
 
     // ----- body -------------------------------------------------------------
