@@ -121,7 +121,10 @@ public class AutostartService {
             return false;
         }
         try {
-            Files.createDirectories(entryFile.getParent());
+            Path parent = entryFile.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             Files.writeString(entryFile, desktopEntryContent(executable.get()),
                     StandardCharsets.UTF_8);
             LOG.info("Autostart entry written to {}", entryFile);
@@ -232,10 +235,6 @@ public class AutostartService {
                 .replace("\"", "\\\"")
                 .replace("`", "\\`")
                 .replace("$", "\\$") + '"';
-    }
-
-    private static boolean isExecutable(Path path) {
-        return Files.isRegularFile(path) && Files.isExecutable(path);
     }
 
     /**
