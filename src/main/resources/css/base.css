@@ -428,8 +428,13 @@
 /* ----- segmented toggle (language switch) -------------------------------- */
 /*
  * Two buttons rendered as one pill: the container draws the border and the
- * rounding, the segments draw only their own fill. Without stripping the
- * segments' own radii the inner edges would show a seam.
+ * rounding, the segments draw only their own fill.
+ *
+ * The heights are pinned rather than left to grow with the content. Bengali
+ * glyphs carry taller ascenders and descenders than Latin ones, so "বাংলা"
+ * would otherwise compute a line box roughly twice the height of "EN" and the
+ * control would tower over the neighbouring pills. Pinning keeps the header
+ * aligned whatever script a segment is labelled in.
  */
 .segmented-toggle {
     -fx-background-color: -sg-ghost-fill;
@@ -438,13 +443,19 @@
     -fx-background-radius: 999;
     -fx-border-radius: 999;
     -fx-padding: 2;
+    -fx-min-height: 30;
+    -fx-pref-height: 30;
+    -fx-max-height: 30;
 }
 
 .segmented-toggle .segment {
     -fx-background-color: transparent;
     -fx-text-fill: -sg-text-muted;
     -fx-font-size: 12px;
-    -fx-padding: 4 12 4 12;
+    -fx-padding: 0 12 0 12;
+    -fx-min-height: 24;
+    -fx-pref-height: 24;
+    -fx-max-height: 24;
     -fx-background-radius: 999;
     -fx-border-width: 0;
     -fx-cursor: hand;
