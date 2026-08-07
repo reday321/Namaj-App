@@ -73,10 +73,21 @@ public final class DesktopEnvironment {
      * @return the snap root, or empty when not running as a snap
      */
     public static java.util.Optional<String> snapRoot() {
+        // SNAP alone is not enough. Snap environment variables are inherited by
+        // child processes, so a .deb installation launched from a terminal that
+        // is itself a snap - VS Code, for instance - would see SNAP set and
+        // wrongly conclude it was confined. SNAP_NAME identifies whose snap it
+        // is, so require it to be ours.
         String snap = System.getenv("SNAP");
-        return snap == null || snap.isBlank()
-                ? java.util.Optional.empty() : java.util.Optional.of(snap);
+        String snapName = System.getenv("SNAP_NAME");
+        if (snap == null || snap.isBlank() || !SNAP_NAME.equals(snapName)) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of(snap);
     }
+
+    /** The snap this application is published under. */
+    private static final String SNAP_NAME = "salah-guardian";
 
     /**
      * @return {@code true} when running inside a confined snap package
