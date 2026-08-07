@@ -161,7 +161,9 @@ public class AppConfig {
         country = country == null ? "" : country.trim();
         timeZoneId = timeZoneId == null ? "" : timeZoneId.trim();
         reminderMinutes = clamp(reminderMinutes, 0, 60);
-        focusDurationSeconds = clamp(focusDurationSeconds, 30, 3600);
+        // Ten minutes, not an hour. A corrupted or hand-edited value of 3600
+        // meant an always-on-top fullscreen window for a full hour.
+        focusDurationSeconds = clamp(focusDurationSeconds, 30, 600);
         lockDelaySeconds = clamp(lockDelaySeconds, 0, 300);
         fridayReminderHour = clamp(fridayReminderHour, 0, 23);
         customFajrAngle = clampAngle(customFajrAngle, CalculationMethodOption.DEFAULT_CUSTOM_FAJR_ANGLE);

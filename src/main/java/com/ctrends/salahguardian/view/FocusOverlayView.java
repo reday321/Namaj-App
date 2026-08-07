@@ -73,9 +73,24 @@ public class FocusOverlayView {
 
     private final FocusOverlayViewModel viewModel;
     private final Stage stage;
+    /**
+     * How many times the overlay will pull focus back before it gives up.
+     *
+     * <p>Re-asserting forever is what turns a firm reminder into a desktop
+     * hijack: every attempt to use another window is undone within one pulse.
+     * Three attempts is enough to survive an incidental focus change, and few
+     * enough that a user who genuinely needs another window wins.</p>
+     */
+    private static final int MAX_FOCUS_REASSERTIONS = 3;
+
+    /** How long Escape must be held to dismiss the overlay. */
+    private static final long ESCAPE_HOLD_NANOS = 1_500_000_000L;
+
     private Consumer<Boolean> onClosed = skipped -> { };
     private Runnable onLockDue = () -> { };
     private boolean closing;
+    private int focusReassertions;
+    private long escapePressedAt;
 
     /**
      * @param configService   supplies the overlay duration and clock format
@@ -108,6 +123,8 @@ public class FocusOverlayView {
      */
     public void show(PrayerTime prayer, boolean friday, boolean armLock) {
         closing = false;
+        focusReassertions = 0;
+        escapePressedAt = 0L;
         viewModel.begin(prayer, friday, () -> close(false), () -> onLockDue.run(), armLock);
         stage.show();
         stage.setFullScreen(true);
@@ -192,10 +209,25 @@ public class FocusOverlayView {
             scene.getStylesheets().add(stylesheet.toExternalForm());
         }
 
-        // Consume Escape before any control can act on it.
+        // Escape stays immune to an accidental tap, but a deliberate
+        // press-and-hold always dismisses the overlay. Without this the only
+        // way out is a mouse click, which is no way out at all for a
+        // keyboard-only or screen-reader user - a keyboard trap under
+        // WCAG 2.1 section 2.1.2.
         scene.addEventFilter(KeyEvent.ANY, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                event.consume();
+            if (event.getCode() != KeyCode.ESCAPE) {
+                return;
+            }
+            event.consume();
+            if (event.getEventType() == KeyEvent.KEY_PRESSED) {
+                if (escapePressedAt == 0L) {
+                    escapePressedAt = System.nanoTime();
+                } else if (System.nanoTime() - escapePressedAt > ESCAPE_HOLD_NANOS) {
+                    LOG.info("Focus overlay dismissed with the Escape hold gesture");
+                    close(true);
+                }
+            } else if (event.getEventType() == KeyEvent.KEY_RELEASED) {
+                escapePressedAt = 0L;
             }
         });
 
@@ -204,8 +236,17 @@ public class FocusOverlayView {
         // Some compositors drop always-on-top when another window is raised;
         // re-assert it whenever we lose focus.
         overlay.focusedProperty().addListener((obs, was, focused) -> {
-            if (!focused && overlay.isShowing() && !closing) {
+            if (focused || !overlay.isShowing() || closing) {
+                return;
+            }
+            if (focusReassertions++ < MAX_FOCUS_REASSERTIONS) {
                 Platform.runLater(this::assertOnTop);
+            } else {
+                // The user has told us repeatedly that they need another
+                // window. Stay visible, stop fighting for the desktop.
+                LOG.info("Yielding focus after {} re-assertions - the reminder stays "
+                        + "on screen but no longer takes focus", focusReassertions);
+                overlay.setAlwaysOnTop(false);
             }
         });
         return overlay;
@@ -398,7 +439,10 @@ public class FocusOverlayView {
             close(false);
         });
 
-        HBox buttons = new HBox(12, skip, dismiss);
+        Label escapeHint = new Label(Messages.get("focus.escapeHint"));
+        escapeHint.getStyleClass().add("focus-escape-hint");
+
+        HBox buttons = new HBox(12, escapeHint, skip, dismiss);
         buttons.setAlignment(Pos.CENTER_RIGHT);
 
         javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
