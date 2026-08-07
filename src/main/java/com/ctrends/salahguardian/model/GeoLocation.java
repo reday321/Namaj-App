@@ -31,6 +31,32 @@ public record GeoLocation(
         LocationSource source,
         Instant resolvedAt) {
 
+    /** Longest place name kept; anything beyond this is decoration or attack. */
+    private static final int MAX_PLACE_NAME = 64;
+
+    /** Control and format characters, which have no place in a city name. */
+    private static final java.util.regex.Pattern UNSAFE_PLACE_CHARS =
+            java.util.regex.Pattern.compile("[\\p{Cntrl}\\p{Cf}]");
+
+    /**
+     * Cleans a place name arriving from a remote service.
+     *
+     * <p>These strings are attacker-influenceable, are written to the config
+     * file, rendered in the UI and written to the log. An embedded newline
+     * would forge log entries (CWE-117) and an unbounded value would bloat both
+     * the config and the tray tooltip.</p>
+     *
+     * @param raw the untrusted value
+     * @return a bounded, control-character-free version
+     */
+    private static String sanitisePlaceName(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String cleaned = UNSAFE_PLACE_CHARS.matcher(raw.trim()).replaceAll("");
+        return cleaned.length() > MAX_PLACE_NAME ? cleaned.substring(0, MAX_PLACE_NAME) : cleaned;
+    }
+
     /** Fallback position (Makkah al-Mukarramah) used when every provider fails. */
     public static final GeoLocation MAKKAH = new GeoLocation(
             21.4225, 39.8262, "Makkah", "Saudi Arabia", "Asia/Riyadh",
@@ -43,9 +69,9 @@ public record GeoLocation(
         if (!isValidLongitude(longitude)) {
             throw new IllegalArgumentException("Longitude out of range [-180, 180]: " + longitude);
         }
-        city = city == null ? "" : city.trim();
-        country = country == null ? "" : country.trim();
-        timeZoneId = timeZoneId == null ? "" : timeZoneId.trim();
+        city = sanitisePlaceName(city);
+        country = sanitisePlaceName(country);
+        timeZoneId = sanitisePlaceName(timeZoneId);
         source = Objects.requireNonNullElse(source, LocationSource.MANUAL);
         resolvedAt = Objects.requireNonNullElse(resolvedAt, Instant.EPOCH);
     }
@@ -107,6 +133,19 @@ public record GeoLocation(
         return Messages.localiseDigits(String.format(java.util.Locale.ROOT, "%.4f°%s, %.4f°%s",
                 Math.abs(latitude), latitude >= 0 ? "N" : "S",
                 Math.abs(longitude), longitude >= 0 ? "E" : "W"));
+    }
+
+    /**
+     * A deliberately imprecise label, safe to write to a log file.
+     *
+     * <p>{@link #coordinateLabel()} identifies a home to within about eleven
+     * metres. Rounded to one decimal place the value is still enough to answer
+     * "did detection work?" while no longer pinpointing where someone lives.</p>
+     *
+     * @return coordinates rounded to roughly eleven kilometres
+     */
+    public String coarseLabel() {
+        return String.format(java.util.Locale.ROOT, "~%.1f,%.1f", latitude, longitude);
     }
 
     /**

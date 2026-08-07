@@ -216,7 +216,8 @@ public class GeoClueLocationProvider implements LocationProvider {
             LOG.debug("GeoClue returned out-of-range coordinates: {}, {}", lat, lon);
             return Optional.empty();
         }
-        LOG.info("GeoClue resolved the position to {}, {}", lat, lon);
+        LOG.info("GeoClue produced a fix ({})",
+                GeoLocation.of(lat, lon, "", "", LocationSource.GEOCLUE).coarseLabel());
         return Optional.of(GeoLocation.of(lat, lon, "", "", LocationSource.GEOCLUE));
     }
 

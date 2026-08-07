@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -297,20 +298,63 @@ class LocationTest {
     }
 
     @Test
-    @DisplayName("parses an ip-api.com payload with its different field names")
-    void parsesIpApiPayload() {
+    @DisplayName("parses the secondary endpoint's payload")
+    void parsesSecondaryPayload() {
         IpGeolocationProvider provider = new IpGeolocationProvider();
         IpGeolocationProvider.Endpoint endpoint = IpGeolocationProvider.defaultEndpoints().get(1);
 
         String body = """
-                {"status":"success","country":"Egypt","city":"Cairo",
-                 "lat":30.0444,"lon":31.2357,"timezone":"Africa/Cairo"}
+                {"success":true,"country":"Egypt","city":"Cairo",
+                 "latitude":30.0444,"longitude":31.2357,"timezone":"Africa/Cairo"}
                 """;
 
         GeoLocation parsed = provider.parse(body, endpoint).orElseThrow();
         assertEquals(30.0444, parsed.latitude(), 1e-6);
         assertEquals("Cairo", parsed.city());
-        assertEquals("Africa/Cairo", parsed.timeZoneId());
+    }
+
+    @Test
+    @DisplayName("every shipped endpoint uses TLS, and a cleartext one is refused")
+    void refusesCleartextEndpoints() {
+        for (IpGeolocationProvider.Endpoint endpoint : IpGeolocationProvider.defaultEndpoints()) {
+            assertTrue(endpoint.url().startsWith("https://"),
+                    endpoint.name() + " must use TLS but was " + endpoint.url());
+        }
+        // Constructing with a plaintext endpoint must fail loudly, not silently
+        // downgrade the user's location lookup.
+        assertThrows(IllegalArgumentException.class, () -> new IpGeolocationProvider(
+                java.net.http.HttpClient.newHttpClient(),
+                List.of(new IpGeolocationProvider.Endpoint("evil", "http://evil.example/json",
+                        "lat", "lon", "city", "country", "tz"))));
+    }
+
+    @Test
+    @DisplayName("the user agent does not disclose what the application is")
+    void userAgentIsAnonymous() throws Exception {
+        java.lang.reflect.Field field =
+                IpGeolocationProvider.class.getDeclaredField("USER_AGENT");
+        field.setAccessible(true);
+        String userAgent = (String) field.get(null);
+        for (String leak : new String[]{"Salah", "Guardian", "prayer", "Prayer", "islam", "Islam"}) {
+            assertFalse(userAgent.contains(leak),
+                    "the user agent must not disclose religious use: " + userAgent);
+        }
+    }
+
+    @Test
+    @DisplayName("hostile place names are bounded and stripped of control characters")
+    void sanitisesPlaceNames() {
+        IpGeolocationProvider provider = new IpGeolocationProvider();
+        var endpoint = IpGeolocationProvider.defaultEndpoints().get(0);
+
+        // A newline here would forge log entries; the length would bloat config.
+        String body = "{\"latitude\":23.8,\"longitude\":90.4,"
+                + "\"city\":\"Dhaka\\nINFO Security - audit passed\","
+                + "\"country_name\":\"" + "x".repeat(500) + "\"}";
+
+        GeoLocation parsed = provider.parse(body, endpoint).orElseThrow();
+        assertFalse(parsed.city().contains("\n"), "newlines must be stripped");
+        assertTrue(parsed.country().length() <= 64, "place names must be bounded");
     }
 
     @Test

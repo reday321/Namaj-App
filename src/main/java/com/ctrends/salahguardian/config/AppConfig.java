@@ -31,7 +31,7 @@ public class AppConfig {
      * Current schema version. Bump this whenever a stored value needs
      * reinterpreting, and add the corresponding step to {@link #migrate()}.
      */
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int CURRENT_SCHEMA_VERSION = 3;
 
     /** Schema version of the document this instance was loaded from. */
     private int schemaVersion = CURRENT_SCHEMA_VERSION;
@@ -46,6 +46,17 @@ public class AppConfig {
     private String locationSource = LocationSource.MANUAL.name();
     private long locationResolvedAtEpochSecond = 0L;
     private boolean autoDetectLocation = true;
+    /**
+     * Whether the user has been asked about the one outbound request this
+     * application makes.
+     *
+     * <p>Three states, not two: {@code null} means "never asked", so the
+     * question is put once and the answer respected thereafter. Defaulting to
+     * true would make the consent meaningless, and defaulting to false would
+     * silently disable detection for existing users, so the distinction
+     * matters.</p>
+     */
+    private Boolean networkLookupConsented = null;
 
     // ----- calculation ------------------------------------------------------
 
@@ -119,6 +130,13 @@ public class AppConfig {
      * @return {@code this}, for chaining
      */
     public AppConfig migrate() {
+        if (schemaVersion < 3 && hasStoredLocation() && networkLookupConsented == null) {
+            // An existing installation has already performed the lookup, so the
+            // question is moot for them - recording it as answered avoids a
+            // pointless prompt without inventing consent for a request that has
+            // not yet happened.
+            networkLookupConsented = Boolean.TRUE;
+        }
         if (schemaVersion < 2) {
             // v1 defaulted to a 24 hour clock. v2 defaults to 12 hour, which is
             // what most of the world reads a prayer timetable in. Existing users
@@ -127,7 +145,7 @@ public class AppConfig {
             // set it in Settings and that choice then survives, because the
             // migration only ever runs against a v1 document.
             use24HourClock = false;
-            LoggerHolder.LOG.info("Migrated configuration from schema v{} to v2: "
+            LoggerHolder.LOG.info("Migrated configuration from schema v{}: "
                     + "the clock now defaults to 12 hour", schemaVersion);
         }
         schemaVersion = CURRENT_SCHEMA_VERSION;
@@ -161,7 +179,9 @@ public class AppConfig {
         country = country == null ? "" : country.trim();
         timeZoneId = timeZoneId == null ? "" : timeZoneId.trim();
         reminderMinutes = clamp(reminderMinutes, 0, 60);
-        focusDurationSeconds = clamp(focusDurationSeconds, 30, 3600);
+        // Ten minutes, not an hour. A corrupted or hand-edited value of 3600
+        // meant an always-on-top fullscreen window for a full hour.
+        focusDurationSeconds = clamp(focusDurationSeconds, 30, 600);
         lockDelaySeconds = clamp(lockDelaySeconds, 0, 300);
         fridayReminderHour = clamp(fridayReminderHour, 0, 23);
         customFajrAngle = clampAngle(customFajrAngle, CalculationMethodOption.DEFAULT_CUSTOM_FAJR_ANGLE);
@@ -281,6 +301,7 @@ public class AppConfig {
         c.locationSource = locationSource;
         c.locationResolvedAtEpochSecond = locationResolvedAtEpochSecond;
         c.autoDetectLocation = autoDetectLocation;
+        c.networkLookupConsented = networkLookupConsented;
         c.calculationMethod = calculationMethod;
         c.madhab = madhab;
         c.highLatitudeRule = highLatitudeRule;
@@ -341,6 +362,24 @@ public class AppConfig {
 
     public long getLocationResolvedAtEpochSecond() { return locationResolvedAtEpochSecond; }
     public void setLocationResolvedAtEpochSecond(long value) { this.locationResolvedAtEpochSecond = value; }
+
+    /**
+     * @return {@code true} when the user has agreed to the IP geolocation
+     *         lookup, {@code false} when they declined
+     */
+    public boolean isNetworkLookupConsented() {
+        return Boolean.TRUE.equals(networkLookupConsented);
+    }
+
+    /**
+     * @return {@code true} when the question has never been put to the user
+     */
+    public boolean isNetworkLookupUndecided() {
+        return networkLookupConsented == null;
+    }
+
+    public Boolean getNetworkLookupConsented() { return networkLookupConsented; }
+    public void setNetworkLookupConsented(Boolean value) { this.networkLookupConsented = value; }
 
     public boolean isAutoDetectLocation() { return autoDetectLocation; }
     public void setAutoDetectLocation(boolean autoDetectLocation) { this.autoDetectLocation = autoDetectLocation; }

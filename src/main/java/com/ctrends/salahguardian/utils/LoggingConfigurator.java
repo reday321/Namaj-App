@@ -1,6 +1,7 @@
 package com.ctrends.salahguardian.utils;
 
 import com.ctrends.salahguardian.config.ConfigPaths;
+import com.ctrends.salahguardian.config.SecureFiles;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,7 +43,16 @@ public final class LoggingConfigurator {
     public static Path initialise() {
         Path logDirectory = ConfigPaths.logDirectory();
         try {
-            Files.createDirectories(logDirectory);
+            // Logs record where the user has been, so the directory is created
+            // 0700. Logback writes its own files and offers no hook for their
+            // mode, so any it has already created are swept to 0600 here; the
+            // directory being untraversable is what actually protects them.
+            SecureFiles.createPrivateDirectory(logDirectory);
+            int tightened = SecureFiles.hardenDirectoryContents(logDirectory);
+            if (tightened > 0) {
+                System.out.println("[SalahGuardian] tightened permissions on "
+                        + tightened + " existing log file(s)");
+            }
         } catch (IOException e) {
             System.err.println("[SalahGuardian] Could not create the log directory "
                     + logDirectory + " (" + e.getMessage() + "). "

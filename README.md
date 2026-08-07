@@ -106,7 +106,7 @@ Full details, including the one optional dependency, are in
 ```bash
 git clone <repository-url> salah-guardian
 cd salah-guardian
-./gradlew build           # compile + run the 192 unit tests
+./gradlew build           # compile + run the 216 unit tests
 ./gradlew run             # launch it
 ./gradlew jpackageDeb     # or jpackageRpm / jpackageAppImage
 ```
@@ -162,9 +162,12 @@ without a display server.
 | `~/.local/share/salahguardian/logs/` | Rotating logs: daily, 5 MB cap, 14 days, gzipped |
 | `~/.config/autostart/salah-guardian.desktop` | Only if "Start on login" is enabled |
 
-Nothing is sent anywhere. The single outbound request is the IP geolocation lookup,
-and only until a location has been stored once.
-`XDG_CONFIG_HOME` and `XDG_DATA_HOME` are honoured if set.
+Nothing is sent anywhere. The single outbound request is the IP geolocation lookup —
+**you are asked before it happens**, and it stops once a location is stored. Config and
+logs are written `0600` inside `0700` directories, and logs never contain your precise
+coordinates. `XDG_CONFIG_HOME` and `XDG_DATA_HOME` are honoured if set.
+
+Full details in **[PRIVACY.md](PRIVACY.md)**.
 
 ---
 

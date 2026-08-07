@@ -74,7 +74,7 @@ public class AdhanPrayerTimeCalculator implements PrayerTimeCalculator {
                 settings, true);
         LOG.info("No astronomical twilight at {} on {} - approximating from latitude {} "
                         + "(nearest-latitude convention), {} entries produced",
-                location.coordinateLabel(), date, fallbackLatitude, approximated.allTimes().size());
+                location.coarseLabel(), date, fallbackLatitude, approximated.allTimes().size());
         return approximated;
     }
 

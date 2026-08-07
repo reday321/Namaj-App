@@ -40,6 +40,14 @@ repositories {
     mavenCentral()
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        // Make a future transitive downgrade of a security-relevant dependency
+        // a build failure rather than something noticed by a scanner later.
+        force "com.google.guava:guava:${guavaVersion}"
+    }
+}
+
 javafx {
     version = project.property('javafxVersion')
     // controls -> base+graphics, swing -> AWT tray <-> JavaFX bridging
@@ -52,6 +60,10 @@ dependencies {
 
     // Dependency injection
     implementation "com.google.inject:guice:${guiceVersion}"
+    // Guice 7.0.0 pins Guava 31.0.1-jre, which carries CVE-2023-2976 and
+    // CVE-2020-8908 (world-readable temporary directories). Pull the patched
+    // line forward explicitly rather than inheriting the vulnerable one.
+    implementation "com.google.guava:guava:${guavaVersion}"
 
     // JSON configuration persistence
     implementation "com.google.code.gson:gson:${gsonVersion}"
