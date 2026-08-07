@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -42,6 +43,17 @@ public class AutostartService {
 
     /** System property jpackage sets on every generated launcher. */
     private static final String JPACKAGE_APP_PATH = "jpackage.app-path";
+
+    /**
+     * Directory prefixes a legitimately installed launcher may live under.
+     *
+     * <p>Anything outside these is refused. Without this, the working directory
+     * could dictate what runs at every login.</p>
+     */
+    private static final List<Path> TRUSTED_PREFIXES = List.of(
+            Path.of("/opt"), Path.of("/usr/bin"), Path.of("/usr/local/bin"),
+            Path.of("/usr/lib"), Path.of("/usr/share"), Path.of("/snap"),
+            ConfigPaths.home().resolve(".local"));
 
     /**
      * Locations the native packages install the launcher into.
@@ -145,35 +157,81 @@ public class AutostartService {
      */
     public Optional<String> resolveExecutable() {
         String jpackagePath = System.getProperty(JPACKAGE_APP_PATH);
-        if (jpackagePath != null && !jpackagePath.isBlank() && isExecutable(Path.of(jpackagePath))) {
-            return Optional.of(jpackagePath);
+        if (jpackagePath != null && !jpackagePath.isBlank()) {
+            Optional<String> validated = validate(Path.of(jpackagePath));
+            if (validated.isPresent()) {
+                return validated;
+            }
         }
         for (String candidate : KNOWN_INSTALL_PATHS) {
-            Path path = Path.of(candidate);
-            if (isExecutable(path)) {
-                return Optional.of(path.toString());
+            Optional<String> validated = validate(Path.of(candidate));
+            if (validated.isPresent()) {
+                return validated;
             }
         }
         // A --user install of the portable image lives under the home directory.
-        Path userInstall = ConfigPaths.home()
-                .resolve(".local/lib/salah-guardian/bin/SalahGuardian");
-        if (isExecutable(userInstall)) {
-            return Optional.of(userInstall.toString());
-        }
-        return developmentLauncher();
+        return validate(ConfigPaths.home().resolve(".local/lib/salah-guardian/bin/SalahGuardian"));
     }
 
     /**
-     * Finds the {@code installDist} launcher script when running from a source
-     * checkout, so the feature is at least testable during development.
+     * Accepts a candidate launcher only if it is genuinely safe to run at login.
+     *
+     * <p>Three checks, each closing a distinct hole:</p>
+     * <ul>
+     *   <li><b>Canonicalisation.</b> {@code toRealPath} resolves symlinks, so a
+     *       link pointing out of a trusted directory cannot smuggle a target
+     *       past the prefix check.</li>
+     *   <li><b>Prefix allow-list.</b> Only system install locations and the
+     *       user's own {@code ~/.local} qualify. This is what removes the
+     *       former working-directory candidate: a launcher found relative to
+     *       {@code user.dir} meant that running the application from a
+     *       directory an attacker controlled, then enabling "start on login",
+     *       wrote an autostart entry pointing at their binary - persistent
+     *       code execution on every subsequent login.</li>
+     *   <li><b>Control characters.</b> Newlines are legal in Linux filenames,
+     *       and a desktop entry is line-oriented, so a path containing one
+     *       could inject additional keys such as a second {@code Exec=}.</li>
+     * </ul>
+     *
+     * @param candidate the path to check
+     * @return its canonical form when it passes every check
      */
-    private Optional<String> developmentLauncher() {
-        String userDir = System.getProperty("user.dir", "");
-        if (userDir.isBlank()) {
+    private Optional<String> validate(Path candidate) {
+        try {
+            Path real = candidate.toRealPath();
+            if (!Files.isRegularFile(real) || !Files.isExecutable(real)) {
+                return Optional.empty();
+            }
+            if (TRUSTED_PREFIXES.stream().noneMatch(real::startsWith)) {
+                LOG.warn("Refusing an autostart target outside a trusted location: {}", real);
+                return Optional.empty();
+            }
+            String path = real.toString();
+            if (path.chars().anyMatch(c -> c < 0x20 || c == 0x7F)) {
+                LOG.warn("Refusing an autostart target containing control characters");
+                return Optional.empty();
+            }
+            return Optional.of(path);
+        } catch (IOException e) {
             return Optional.empty();
         }
-        Path script = Path.of(userDir, "build", "install", "salah-guardian", "bin", "salah-guardian");
-        return isExecutable(script) ? Optional.of(script.toString()) : Optional.empty();
+    }
+
+    /**
+     * Quotes a path for the {@code Exec} key of a desktop entry.
+     *
+     * <p>The freedesktop specification reserves a set of characters inside a
+     * quoted argument; an unquoted path also breaks outright on the first
+     * space, which any {@code ~/.local} install can easily contain.</p>
+     *
+     * @param path the executable path
+     * @return the path quoted and escaped per the specification
+     */
+    static String quoteExec(String path) {
+        return '"' + path.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("`", "\\`")
+                .replace("$", "\\$") + '"';
     }
 
     private static boolean isExecutable(Path path) {
@@ -205,7 +263,7 @@ public class AutostartService {
                 X-GNOME-Autostart-enabled=true
                 X-GNOME-Autostart-Delay=10
                 X-KDE-autostart-after=panel
-                """.formatted(executable);
+                """.formatted(quoteExec(executable));
     }
 
     /**
