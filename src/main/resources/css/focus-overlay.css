@@ -1,0 +1,119 @@
+/* ==========================================================================
+   Salah Guardian - Prayer focus overlay
+   --------------------------------------------------------------------------
+   Independent of the dashboard themes: the overlay is always dark, because it
+   covers the whole screen and is often shown at Fajr or Isha. The backdrop is
+   translucent so the user still recognises their desktop underneath, which
+   makes the overlay read as an announcement rather than as a lock screen.
+   ========================================================================== */
+
+.focus-root {
+    -fx-background-color: rgba(5, 12, 9, 0.93);
+}
+
+.focus-centre {
+    -fx-padding: 24;
+}
+
+.focus-ornament {
+    -fx-font-size: 46px;
+    -fx-text-fill: rgba(74, 222, 128, 0.65);
+}
+
+.focus-eyebrow {
+    -fx-font-size: 15px;
+    -fx-text-fill: rgba(226, 232, 240, 0.62);
+    -fx-padding: 6 0 0 0;
+}
+
+.focus-prayer-name {
+    -fx-font-size: 88px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f8fafc;
+    -fx-effect: dropshadow(gaussian, rgba(34, 197, 94, 0.35), 40, 0.0, 0, 0);
+}
+
+.focus-prayer-arabic {
+    -fx-font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", "Noto Sans Arabic", serif;
+    -fx-font-size: 46px;
+    -fx-text-fill: #4ade80;
+}
+
+.focus-prayer-time {
+    -fx-font-size: 16px;
+    -fx-text-fill: rgba(226, 232, 240, 0.70);
+}
+
+/* The countdown ring: a faint full circle with an emerald arc sweeping over it. */
+.focus-ring-track {
+    -fx-stroke: rgba(255, 255, 255, 0.10);
+}
+
+.focus-ring-progress {
+    -fx-stroke: #22c55e;
+    -fx-effect: dropshadow(gaussian, rgba(34, 197, 94, 0.45), 16, 0.0, 0, 0);
+}
+
+.focus-countdown {
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 54px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f8fafc;
+}
+
+.focus-remaining-caption {
+    -fx-font-size: 13px;
+    -fx-text-fill: rgba(226, 232, 240, 0.55);
+}
+
+/* ----- footer ----------------------------------------------------------- */
+
+.focus-footer {
+    -fx-padding: 18 4 4 4;
+}
+
+.focus-date {
+    -fx-font-size: 14px;
+    -fx-text-fill: rgba(226, 232, 240, 0.80);
+}
+
+.focus-hijri {
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(74, 222, 128, 0.80);
+}
+
+.focus-clock {
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 26px;
+    -fx-text-fill: rgba(226, 232, 240, 0.85);
+}
+
+.focus-button-primary {
+    -fx-background-color: #22c55e;
+    -fx-text-fill: #05130a;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 30 10 30;
+    -fx-background-radius: 12;
+    -fx-cursor: hand;
+}
+
+.focus-button-primary:hover {
+    -fx-background-color: #16a34a;
+}
+
+.focus-button-ghost {
+    -fx-background-color: rgba(255, 255, 255, 0.07);
+    -fx-text-fill: rgba(226, 232, 240, 0.85);
+    -fx-font-size: 14px;
+    -fx-padding: 10 26 10 26;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-color: rgba(255, 255, 255, 0.12);
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+
+.focus-button-ghost:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.13);
+}

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Salah Guardian logging configuration.
+
+  The log directory is supplied by LoggingConfigurator through the
+  'salahguardian.logDir' system property, which it derives from XDG_DATA_HOME
+  (defaulting to ~/.local/share/salahguardian/logs). The literal default below
+  is only a safety net for the case where logging initialises before that
+  property is set.
+
+  Rotation policy: one file per day, rolled early if it passes 5 MB, keeping
+  14 days of history and never exceeding 50 MB in total. Old files are gzipped.
+-->
+<configuration>
+
+    <property name="LOG_DIR"
+              value="${salahguardian.logDir:-${user.home}/.local/share/salahguardian/logs}"/>
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"/>
+
+    <!-- Console: quiet by default, useful when launched from a terminal. -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %-5level %logger{20} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Rotating file, the durable record referenced by the troubleshooting guide. -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/salah-guardian.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/salah-guardian.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>5MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>50MB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Third party libraries are noisy at DEBUG; keep them at WARN. -->
+    <logger name="javafx" level="WARN"/>
+    <logger name="com.sun.javafx" level="WARN"/>
+    <logger name="com.google.inject" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

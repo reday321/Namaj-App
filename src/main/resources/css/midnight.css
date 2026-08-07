@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Salah Guardian - Midnight theme
+   --------------------------------------------------------------------------
+   For night use: near-black surfaces and a desaturated accent, so that a Fajr
+   reminder on a dark bedroom screen is readable without being glaring.
+   ========================================================================== */
+
+@import "base.css";
+
+.root {
+    -sg-background:      #05070a;
+    -sg-surface:         #0b0f14;
+    -sg-surface-header:  #070a0e;
+    -sg-surface-accent:  #0a1611;
+
+    -sg-accent:          #4ade80;
+    -sg-accent-hover:    #22c55e;
+    -sg-accent-soft:     rgba(74, 222, 128, 0.10);
+    -sg-accent-border:   rgba(74, 222, 128, 0.32);
+    -sg-on-accent:       #04120a;
+
+    -sg-text-primary:    #cbd5e1;
+    -sg-text-secondary:  #94a3b8;
+    -sg-text-muted:      #64748b;
+
+    -sg-card-border:     rgba(255, 255, 255, 0.05);
+    -sg-divider:         rgba(255, 255, 255, 0.05);
+    -sg-shadow:          rgba(0, 0, 0, 0.65);
+
+    -sg-row-hover:       rgba(255, 255, 255, 0.03);
+    -sg-row-next:        rgba(74, 222, 128, 0.07);
+
+    -sg-ghost-fill:      rgba(255, 255, 255, 0.04);
+    -sg-ghost-hover:     rgba(255, 255, 255, 0.08);
+    -sg-input-fill:      rgba(255, 255, 255, 0.04);
+    -sg-tooltip-fill:    #141a21;
+    -sg-scroll-thumb:    rgba(255, 255, 255, 0.10);
+}

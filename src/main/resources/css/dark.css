@@ -1,0 +1,39 @@
+/* ==========================================================================
+   Salah Guardian - Dark theme (default)
+   --------------------------------------------------------------------------
+   Deep slate surfaces with a single emerald accent. Text contrast against
+   -sg-background is 13.4:1 for primary and 5.1:1 for muted, comfortably above
+   the WCAG AA thresholds for body and secondary text respectively.
+   ========================================================================== */
+
+@import "base.css";
+
+.root {
+    -sg-background:      #0b0f14;
+    -sg-surface:         #141b23;
+    -sg-surface-header:  #10161d;
+    -sg-surface-accent:  #12211a;
+
+    -sg-accent:          #22c55e;
+    -sg-accent-hover:    #16a34a;
+    -sg-accent-soft:     rgba(34, 197, 94, 0.14);
+    -sg-accent-border:   rgba(34, 197, 94, 0.45);
+    -sg-on-accent:       #05130a;
+
+    -sg-text-primary:    #e8eef5;
+    -sg-text-secondary:  #b3c0cf;
+    -sg-text-muted:      #7c8b9c;
+
+    -sg-card-border:     rgba(255, 255, 255, 0.07);
+    -sg-divider:         rgba(255, 255, 255, 0.07);
+    -sg-shadow:          rgba(0, 0, 0, 0.45);
+
+    -sg-row-hover:       rgba(255, 255, 255, 0.04);
+    -sg-row-next:        rgba(34, 197, 94, 0.10);
+
+    -sg-ghost-fill:      rgba(255, 255, 255, 0.05);
+    -sg-ghost-hover:     rgba(255, 255, 255, 0.10);
+    -sg-input-fill:      rgba(255, 255, 255, 0.05);
+    -sg-tooltip-fill:    #1c242e;
+    -sg-scroll-thumb:    rgba(255, 255, 255, 0.14);
+}

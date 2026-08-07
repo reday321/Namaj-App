@@ -1,0 +1,11 @@
+/*
+ * The foojay resolver lets Gradle download a matching JDK 21 automatically when
+ * the build machine only has an older one installed. Distributions differ in
+ * which JDK they ship by default (Ubuntu 22.04 defaults to 11, Debian 12 to 17),
+ * so this keeps `./gradlew build` working everywhere without manual setup.
+ */
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'salah-guardian'

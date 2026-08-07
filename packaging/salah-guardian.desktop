@@ -1,0 +1,20 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Salah Guardian
+GenericName=Prayer Times
+Comment=Reminds you of prayer times based on your location
+Exec=/opt/salah-guardian/bin/SalahGuardian
+Icon=salah-guardian
+Terminal=false
+Categories=Utility;Clock;
+Keywords=prayer;salah;namaz;adhan;islam;qibla;muslim;
+StartupNotify=true
+StartupWMClass=com-ctrends-salahguardian-Launcher
+SingleMainWindow=true
+
+Actions=Settings;
+
+[Desktop Action Settings]
+Name=Settings
+Exec=/opt/salah-guardian/bin/SalahGuardian --settings

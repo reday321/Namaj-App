@@ -1,0 +1,220 @@
+/*
+ * ---------------------------------------------------------------------------
+ *  Salah Guardian - Linux desktop prayer reminder
+ *  Build script (Gradle 8.x, Java 21, JavaFX 21)
+ * ---------------------------------------------------------------------------
+ *  Common tasks:
+ *    ./gradlew run              - run the application from source
+ *    ./gradlew test             - run the unit test suite
+ *    ./gradlew installDist      - stage a runnable image in build/install
+ *    ./gradlew jpackageAppImage - self contained folder (portable, any distro)
+ *    ./gradlew jpackageDeb      - .deb  (Ubuntu / Mint / Debian)
+ *    ./gradlew jpackageRpm      - .rpm  (Fedora / RHEL / openSUSE)
+ * ---------------------------------------------------------------------------
+ */
+plugins {
+    id 'java'
+    id 'application'
+    id 'jacoco'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+group = 'com.ctrends'
+version = project.property('appVersion')
+description = project.property('appDescription')
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+// The JDK that actually compiles the code. jpackage and jlink are taken from
+// this same installation rather than from the JVM running Gradle, which may be
+// older. compilerFor() is used rather than launcherFor() on purpose: it only
+// ever resolves a full JDK, whereas launcherFor() will happily return a
+// headless JRE that has no jpackage and an incomplete module set.
+def javaToolchain = javaToolchains.compilerFor(java.toolchain)
+
+repositories {
+    mavenCentral()
+}
+
+javafx {
+    version = project.property('javafxVersion')
+    // controls -> base+graphics, swing -> AWT tray <-> JavaFX bridging
+    modules = ['javafx.controls', 'javafx.swing']
+}
+
+dependencies {
+    // Prayer time engine (batoulapps/adhan-java)
+    implementation "com.batoulapps.adhan:adhan:${adhanVersion}"
+
+    // Dependency injection
+    implementation "com.google.inject:guice:${guiceVersion}"
+
+    // JSON configuration persistence
+    implementation "com.google.code.gson:gson:${gsonVersion}"
+
+    // Logging facade + rotating file backend
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "ch.qos.logback:logback-classic:${logbackVersion}"
+
+    // Tests
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    // Launcher does NOT extend javafx.application.Application, which lets the
+    // app start with JavaFX on the plain classpath (required for jpackage).
+    mainClass = project.property('appMainClass')
+    applicationDefaultJvmArgs = [
+            '-Xms32m',
+            '-Xmx256m',
+            '-Dprism.lcdtext=false',
+            '-Dfile.encoding=UTF-8'
+    ]
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+test {
+    useJUnitPlatform()
+    // The suite is pure logic: never require a display server.
+    systemProperty 'java.awt.headless', 'true'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat = 'full'
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Implementation-Title': project.property('appName'),
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': project.property('appVendor'),
+                'Main-Class': project.property('appMainClass')
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+//  jpackage native packaging
+// ---------------------------------------------------------------------------
+//  jpackage consumes the flat lib/ directory produced by `installDist`, so the
+//  application stays non-modular and every third-party jar is simply copied.
+// ---------------------------------------------------------------------------
+def jpackageOutput = layout.buildDirectory.dir('jpackage')
+def installLibDir = layout.buildDirectory.dir('install/salah-guardian/lib')
+
+/** Shared jpackage argument list. */
+ext.jpackageArgs = { String type ->
+    def args = [
+            '--type', type,
+            '--name', project.property('appName'),
+            '--app-version', project.version,
+            '--vendor', project.property('appVendor'),
+            '--description', project.property('appDescription'),
+            '--copyright', "Copyright (c) ${project.property('appVendor')}",
+            '--input', installLibDir.get().asFile.absolutePath,
+            '--main-jar', "salah-guardian-${project.version}.jar",
+            '--main-class', project.property('appMainClass'),
+            '--dest', jpackageOutput.get().asFile.absolutePath,
+            '--icon', file('packaging/icons/salah-guardian.png').absolutePath,
+            // Overrides jpackage's bundled desktop-entry template; see
+            // packaging/jpackage-resources/README.md.
+            '--resource-dir', file('packaging/jpackage-resources').absolutePath,
+            '--java-options', '-Xms32m',
+            '--java-options', '-Xmx256m',
+            '--java-options', '-Dfile.encoding=UTF-8',
+            // jlink module set required by JavaFX + HttpClient + logging.
+            // Minimal module set: java.desktop for AWT/JavaFX and the tray,
+            // java.net.http for IP geolocation, java.xml for the Logback
+            // configuration, jdk.unsupported for JavaFX's use of sun.misc.Unsafe,
+            // jdk.crypto.ec for HTTPS, jdk.localedata for non-English locales.
+            '--add-modules', 'java.base,java.desktop,java.logging,java.naming,' +
+                    'java.net.http,java.prefs,java.xml,' +
+                    'jdk.unsupported,jdk.crypto.ec,jdk.localedata',
+            '--verbose'
+    ]
+    if (type in ['deb', 'rpm']) {
+        args += [
+                '--linux-shortcut',
+                '--linux-menu-group', 'Utility;Clock;',
+                '--linux-app-category', 'Utility',
+                '--linux-package-name', 'salah-guardian'
+        ]
+    }
+    if (type == 'deb') {
+        args += ['--linux-deb-maintainer', 'team@ctrends-software.com']
+    }
+    if (type == 'rpm') {
+        args += ['--linux-rpm-license-type', 'MIT']
+    }
+    return args
+}
+
+tasks.register('preparePackaging') {
+    group = 'distribution'
+    description = 'Stages the runtime image consumed by jpackage.'
+    dependsOn 'installDist'
+    doLast {
+        jpackageOutput.get().asFile.mkdirs()
+    }
+}
+
+['AppImage': 'app-image', 'Deb': 'deb', 'Rpm': 'rpm'].each { suffix, type ->
+    tasks.register("jpackage${suffix}", Exec) {
+        group = 'distribution'
+        description = "Builds a native '${type}' package with jpackage."
+        dependsOn 'preparePackaging'
+        def jpackageBin = javaToolchain.map {
+            it.metadata.installationPath.file('bin/jpackage').asFile.absolutePath
+        }
+        commandLine(['jpackage'])   // replaced in doFirst once the toolchain resolves
+        doFirst {
+            // jpackage refuses to overwrite an existing destination, so clear
+            // any output from a previous run before it starts.
+            def previous = new File(jpackageOutput.get().asFile,
+                    type == 'app-image' ? project.property('appName') : '')
+            if (type == 'app-image' && previous.exists()) {
+                logger.lifecycle("Removing the previous app-image at ${previous}")
+                project.delete(previous)
+            }
+            def binary = new File(jpackageBin.get())
+            if (!binary.canExecute()) {
+                throw new GradleException(
+                        "jpackage was not found at ${binary}. Install a full JDK 21 " +
+                        "(e.g. 'sudo apt install openjdk-21-jdk' or " +
+                        "'sudo dnf install java-21-openjdk-devel'), not just the JRE.")
+            }
+            commandLine([binary.absolutePath] + project.ext.jpackageArgs(type))
+            logger.lifecycle("Running jpackage --type ${type} using ${binary}")
+        }
+    }
+}
+
+tasks.register('packageAll') {
+    group = 'distribution'
+    description = 'Builds every supported Linux package format.'
+    dependsOn 'jpackageAppImage', 'jpackageDeb', 'jpackageRpm'
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}

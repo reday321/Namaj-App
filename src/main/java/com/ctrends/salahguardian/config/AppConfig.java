@@ -1,0 +1,328 @@
+package com.ctrends.salahguardian.config;
+
+import com.ctrends.salahguardian.model.CalculationMethodOption;
+import com.ctrends.salahguardian.model.GeoLocation;
+import com.ctrends.salahguardian.model.HighLatitudeRuleOption;
+import com.ctrends.salahguardian.model.LocationSource;
+import com.ctrends.salahguardian.model.MadhabOption;
+
+import java.time.Instant;
+
+/**
+ * The serialisable form of every user preference, persisted verbatim as
+ * {@code ~/.config/salahguardian/config.json}.
+ *
+ * <p>This is a deliberately plain mutable bean: Gson maps it field-for-field,
+ * which keeps the on-disk document readable and hand-editable. Enum valued
+ * preferences are stored as {@code String} so that an unknown or hand-typed
+ * value degrades to the default instead of aborting the whole load.</p>
+ *
+ * <p>All accessors are null-safe; {@link #normalise()} repairs any value that
+ * was corrupted or written by an older version.</p>
+ *
+ * @author CTrends Software
+ */
+public class AppConfig {
+
+    // ----- schema -----------------------------------------------------------
+
+    /** Schema version, incremented when a migration becomes necessary. */
+    private int schemaVersion = 1;
+
+    // ----- location ---------------------------------------------------------
+
+    private double latitude = GeoLocation.MAKKAH.latitude();
+    private double longitude = GeoLocation.MAKKAH.longitude();
+    private String city = "";
+    private String country = "";
+    private String timeZoneId = "";
+    private String locationSource = LocationSource.MANUAL.name();
+    private long locationResolvedAtEpochSecond = 0L;
+    private boolean autoDetectLocation = true;
+
+    // ----- calculation ------------------------------------------------------
+
+    private String calculationMethod = CalculationMethodOption.MUSLIM_WORLD_LEAGUE.name();
+    private String madhab = MadhabOption.SHAFI.name();
+    private String highLatitudeRule = HighLatitudeRuleOption.MIDDLE_OF_THE_NIGHT.name();
+    private double customFajrAngle = CalculationMethodOption.DEFAULT_CUSTOM_FAJR_ANGLE;
+    private double customIshaAngle = CalculationMethodOption.DEFAULT_CUSTOM_ISHA_ANGLE;
+
+    /** Per-prayer manual offsets in minutes, order: Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha. */
+    private int[] manualAdjustments = new int[6];
+
+    // ----- reminders --------------------------------------------------------
+
+    private boolean notificationsEnabled = true;
+    private int reminderMinutes = 5;
+    private boolean remindAtPrayerTime = true;
+    private boolean silentMode = false;
+    private boolean fridayReminderEnabled = true;
+    private int fridayReminderHour = 9;
+    private boolean ramadanRemindersEnabled = true;
+
+    // ----- focus mode -------------------------------------------------------
+
+    private boolean focusModeEnabled = true;
+    private int focusDurationSeconds = 300;
+
+    // ----- appearance / behaviour ------------------------------------------
+
+    private String theme = Theme.DARK.name();
+    private boolean use24HourClock = true;
+    private boolean startOnLogin = false;
+    private boolean startMinimisedToTray = true;
+    private boolean showHijriDate = true;
+
+    // ----- derived helpers --------------------------------------------------
+
+    /**
+     * Clamps every field into its valid range. Called after loading and before
+     * saving so that neither a hand-edited file nor a UI bug can put the
+     * application into an unusable state.
+     *
+     * @return {@code this}, for chaining
+     */
+    public AppConfig normalise() {
+        if (!GeoLocation.isValidLatitude(latitude)) {
+            latitude = GeoLocation.MAKKAH.latitude();
+        }
+        if (!GeoLocation.isValidLongitude(longitude)) {
+            longitude = GeoLocation.MAKKAH.longitude();
+        }
+        city = city == null ? "" : city.trim();
+        country = country == null ? "" : country.trim();
+        timeZoneId = timeZoneId == null ? "" : timeZoneId.trim();
+        reminderMinutes = clamp(reminderMinutes, 0, 60);
+        focusDurationSeconds = clamp(focusDurationSeconds, 30, 3600);
+        fridayReminderHour = clamp(fridayReminderHour, 0, 23);
+        customFajrAngle = clampAngle(customFajrAngle, CalculationMethodOption.DEFAULT_CUSTOM_FAJR_ANGLE);
+        customIshaAngle = clampAngle(customIshaAngle, CalculationMethodOption.DEFAULT_CUSTOM_ISHA_ANGLE);
+        if (manualAdjustments == null || manualAdjustments.length != 6) {
+            manualAdjustments = new int[6];
+        } else {
+            for (int i = 0; i < manualAdjustments.length; i++) {
+                manualAdjustments[i] = clamp(manualAdjustments[i], -120, 120);
+            }
+        }
+        if (schemaVersion <= 0) {
+            schemaVersion = 1;
+        }
+        return this;
+    }
+
+    /**
+     * Rebuilds the stored coordinates into a domain object.
+     *
+     * @return the persisted location, flagged as {@link LocationSource#CACHED}
+     *         when it came from a previous automatic detection
+     */
+    public GeoLocation toGeoLocation() {
+        LocationSource source = LocationSource.MANUAL;
+        try {
+            source = LocationSource.valueOf(locationSource);
+        } catch (IllegalArgumentException | NullPointerException ignored) {
+            // fall through to MANUAL
+        }
+        return new GeoLocation(latitude, longitude, city, country, timeZoneId,
+                source, Instant.ofEpochSecond(Math.max(0, locationResolvedAtEpochSecond)));
+    }
+
+    /**
+     * Copies a freshly detected location into this configuration.
+     *
+     * @param location the location to persist
+     */
+    public void applyLocation(GeoLocation location) {
+        this.latitude = location.latitude();
+        this.longitude = location.longitude();
+        this.city = location.city();
+        this.country = location.country();
+        this.timeZoneId = location.timeZoneId();
+        this.locationSource = location.source().name();
+        this.locationResolvedAtEpochSecond = location.resolvedAt().getEpochSecond();
+    }
+
+    /**
+     * @return {@code true} once a location has been stored at least once, which
+     *         is what allows the application to run fully offline
+     */
+    public boolean hasStoredLocation() {
+        return locationResolvedAtEpochSecond > 0L;
+    }
+
+    /**
+     * @return the resolved calculation convention
+     */
+    public CalculationMethodOption calculationMethodOption() {
+        return CalculationMethodOption.parseOrDefault(calculationMethod,
+                CalculationMethodOption.MUSLIM_WORLD_LEAGUE);
+    }
+
+    /**
+     * @return the resolved juristic school
+     */
+    public MadhabOption madhabOption() {
+        return MadhabOption.parseOrDefault(madhab, MadhabOption.SHAFI);
+    }
+
+    /**
+     * @return the resolved high latitude strategy
+     */
+    public HighLatitudeRuleOption highLatitudeRuleOption() {
+        return HighLatitudeRuleOption.parseOrDefault(highLatitudeRule,
+                HighLatitudeRuleOption.MIDDLE_OF_THE_NIGHT);
+    }
+
+    /**
+     * @return the resolved theme
+     */
+    public Theme themeOption() {
+        return Theme.parseOrDefault(theme, Theme.DARK);
+    }
+
+    /**
+     * @return {@code true} when notifications should actually be delivered,
+     *         i.e. enabled and not muted by silent mode
+     */
+    public boolean shouldNotify() {
+        return notificationsEnabled && !silentMode;
+    }
+
+    /**
+     * Creates a detached copy, used by the settings screen so that edits can be
+     * discarded without touching the live configuration.
+     *
+     * @return a deep enough copy for editing purposes
+     */
+    public AppConfig copy() {
+        AppConfig c = new AppConfig();
+        c.schemaVersion = schemaVersion;
+        c.latitude = latitude;
+        c.longitude = longitude;
+        c.city = city;
+        c.country = country;
+        c.timeZoneId = timeZoneId;
+        c.locationSource = locationSource;
+        c.locationResolvedAtEpochSecond = locationResolvedAtEpochSecond;
+        c.autoDetectLocation = autoDetectLocation;
+        c.calculationMethod = calculationMethod;
+        c.madhab = madhab;
+        c.highLatitudeRule = highLatitudeRule;
+        c.customFajrAngle = customFajrAngle;
+        c.customIshaAngle = customIshaAngle;
+        c.manualAdjustments = manualAdjustments == null ? new int[6] : manualAdjustments.clone();
+        c.notificationsEnabled = notificationsEnabled;
+        c.reminderMinutes = reminderMinutes;
+        c.remindAtPrayerTime = remindAtPrayerTime;
+        c.silentMode = silentMode;
+        c.fridayReminderEnabled = fridayReminderEnabled;
+        c.fridayReminderHour = fridayReminderHour;
+        c.ramadanRemindersEnabled = ramadanRemindersEnabled;
+        c.focusModeEnabled = focusModeEnabled;
+        c.focusDurationSeconds = focusDurationSeconds;
+        c.theme = theme;
+        c.use24HourClock = use24HourClock;
+        c.startOnLogin = startOnLogin;
+        c.startMinimisedToTray = startMinimisedToTray;
+        c.showHijriDate = showHijriDate;
+        return c;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static double clampAngle(double value, double fallback) {
+        return Double.isFinite(value) && value > 0.0 && value < 30.0 ? value : fallback;
+    }
+
+    // ----- generated accessors ---------------------------------------------
+
+    public int getSchemaVersion() { return schemaVersion; }
+    public void setSchemaVersion(int schemaVersion) { this.schemaVersion = schemaVersion; }
+
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
+
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+
+    public String getTimeZoneId() { return timeZoneId; }
+    public void setTimeZoneId(String timeZoneId) { this.timeZoneId = timeZoneId; }
+
+    public String getLocationSource() { return locationSource; }
+    public void setLocationSource(String locationSource) { this.locationSource = locationSource; }
+
+    public long getLocationResolvedAtEpochSecond() { return locationResolvedAtEpochSecond; }
+    public void setLocationResolvedAtEpochSecond(long value) { this.locationResolvedAtEpochSecond = value; }
+
+    public boolean isAutoDetectLocation() { return autoDetectLocation; }
+    public void setAutoDetectLocation(boolean autoDetectLocation) { this.autoDetectLocation = autoDetectLocation; }
+
+    public String getCalculationMethod() { return calculationMethod; }
+    public void setCalculationMethod(String calculationMethod) { this.calculationMethod = calculationMethod; }
+
+    public String getMadhab() { return madhab; }
+    public void setMadhab(String madhab) { this.madhab = madhab; }
+
+    public String getHighLatitudeRule() { return highLatitudeRule; }
+    public void setHighLatitudeRule(String highLatitudeRule) { this.highLatitudeRule = highLatitudeRule; }
+
+    public double getCustomFajrAngle() { return customFajrAngle; }
+    public void setCustomFajrAngle(double customFajrAngle) { this.customFajrAngle = customFajrAngle; }
+
+    public double getCustomIshaAngle() { return customIshaAngle; }
+    public void setCustomIshaAngle(double customIshaAngle) { this.customIshaAngle = customIshaAngle; }
+
+    public int[] getManualAdjustments() { return manualAdjustments; }
+    public void setManualAdjustments(int[] manualAdjustments) { this.manualAdjustments = manualAdjustments; }
+
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+
+    public int getReminderMinutes() { return reminderMinutes; }
+    public void setReminderMinutes(int reminderMinutes) { this.reminderMinutes = reminderMinutes; }
+
+    public boolean isRemindAtPrayerTime() { return remindAtPrayerTime; }
+    public void setRemindAtPrayerTime(boolean remindAtPrayerTime) { this.remindAtPrayerTime = remindAtPrayerTime; }
+
+    public boolean isSilentMode() { return silentMode; }
+    public void setSilentMode(boolean silentMode) { this.silentMode = silentMode; }
+
+    public boolean isFridayReminderEnabled() { return fridayReminderEnabled; }
+    public void setFridayReminderEnabled(boolean fridayReminderEnabled) { this.fridayReminderEnabled = fridayReminderEnabled; }
+
+    public int getFridayReminderHour() { return fridayReminderHour; }
+    public void setFridayReminderHour(int fridayReminderHour) { this.fridayReminderHour = fridayReminderHour; }
+
+    public boolean isRamadanRemindersEnabled() { return ramadanRemindersEnabled; }
+    public void setRamadanRemindersEnabled(boolean ramadanRemindersEnabled) { this.ramadanRemindersEnabled = ramadanRemindersEnabled; }
+
+    public boolean isFocusModeEnabled() { return focusModeEnabled; }
+    public void setFocusModeEnabled(boolean focusModeEnabled) { this.focusModeEnabled = focusModeEnabled; }
+
+    public int getFocusDurationSeconds() { return focusDurationSeconds; }
+    public void setFocusDurationSeconds(int focusDurationSeconds) { this.focusDurationSeconds = focusDurationSeconds; }
+
+    public String getTheme() { return theme; }
+    public void setTheme(String theme) { this.theme = theme; }
+
+    public boolean isUse24HourClock() { return use24HourClock; }
+    public void setUse24HourClock(boolean use24HourClock) { this.use24HourClock = use24HourClock; }
+
+    public boolean isStartOnLogin() { return startOnLogin; }
+    public void setStartOnLogin(boolean startOnLogin) { this.startOnLogin = startOnLogin; }
+
+    public boolean isStartMinimisedToTray() { return startMinimisedToTray; }
+    public void setStartMinimisedToTray(boolean startMinimisedToTray) { this.startMinimisedToTray = startMinimisedToTray; }
+
+    public boolean isShowHijriDate() { return showHijriDate; }
+    public void setShowHijriDate(boolean showHijriDate) { this.showHijriDate = showHijriDate; }
+}

@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Salah Guardian - Light theme
+   --------------------------------------------------------------------------
+   The same structure and the same emerald accent on paper-white surfaces. The
+   accent is darkened to #15803d here so that green text on white still clears
+   4.5:1 contrast, which the brighter #22c55e would not.
+   ========================================================================== */
+
+@import "base.css";
+
+.root {
+    -sg-background:      #f4f6f8;
+    -sg-surface:         #ffffff;
+    -sg-surface-header:  #ffffff;
+    -sg-surface-accent:  #f0fdf4;
+
+    -sg-accent:          #15803d;
+    -sg-accent-hover:    #166534;
+    -sg-accent-soft:     rgba(21, 128, 61, 0.10);
+    -sg-accent-border:   rgba(21, 128, 61, 0.35);
+    -sg-on-accent:       #ffffff;
+
+    -sg-text-primary:    #0f172a;
+    -sg-text-secondary:  #44546a;
+    -sg-text-muted:      #6b7a8f;
+
+    -sg-card-border:     rgba(15, 23, 42, 0.10);
+    -sg-divider:         rgba(15, 23, 42, 0.08);
+    -sg-shadow:          rgba(15, 23, 42, 0.12);
+
+    -sg-row-hover:       rgba(15, 23, 42, 0.04);
+    -sg-row-next:        rgba(21, 128, 61, 0.08);
+
+    -sg-ghost-fill:      rgba(15, 23, 42, 0.04);
+    -sg-ghost-hover:     rgba(15, 23, 42, 0.08);
+    -sg-input-fill:      #ffffff;
+    -sg-tooltip-fill:    #1f2937;
+    -sg-scroll-thumb:    rgba(15, 23, 42, 0.18);
+}
+
+/* The tooltip keeps a dark background in this theme, so its text must invert. */
+.tooltip {
+    -fx-text-fill: #f8fafc;
+}

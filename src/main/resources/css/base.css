@@ -1,0 +1,426 @@
+/* ==========================================================================
+   Salah Guardian - shared structure
+   --------------------------------------------------------------------------
+   This file defines every layout rule, radius, weight and transition. It never
+   states a colour directly: each theme (dark.css, light.css, midnight.css)
+   imports this file and then defines the -sg-* looked-up colours it references.
+   That split is what lets a theme change be a one line swap in the scene's
+   stylesheet list.
+   ========================================================================== */
+
+.root {
+    -fx-font-family: "Inter", "Ubuntu", "Cantarell", "Noto Sans", "DejaVu Sans", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: -sg-background;
+}
+
+.root-pane {
+    -fx-background-color: -sg-background;
+}
+
+/* ----- header ----------------------------------------------------------- */
+
+.app-header {
+    -fx-background-color: -sg-surface-header;
+    -fx-border-color: transparent transparent -sg-divider transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.app-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-text-primary;
+}
+
+.app-title-arabic {
+    -fx-font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", "Noto Sans Arabic", serif;
+    -fx-font-size: 15px;
+    -fx-text-fill: -sg-accent;
+}
+
+.app-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sg-text-muted;
+}
+
+/* ----- cards ------------------------------------------------------------ */
+
+.body-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
+.body-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.card {
+    -fx-background-color: -sg-surface;
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: -sg-card-border;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, -sg-shadow, 18, 0.0, 0, 6);
+}
+
+.card-accent {
+    -fx-background-color: -sg-surface-accent;
+    -fx-border-color: -sg-accent-border;
+}
+
+.card-title {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-text-muted;
+    /* Wide tracking is what gives the small caps heading its Material feel. */
+    -fx-label-padding: 0 0 2 0;
+}
+
+.card-primary-value {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-text-primary;
+}
+
+.card-secondary-value {
+    -fx-font-size: 13px;
+    -fx-text-fill: -sg-text-secondary;
+}
+
+.card-caption {
+    -fx-font-size: 11px;
+    -fx-text-fill: -sg-text-muted;
+}
+
+.card-clock {
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-accent;
+}
+
+/* ----- hero (next prayer) ----------------------------------------------- */
+
+.hero-prayer-name {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-text-primary;
+}
+
+.hero-prayer-arabic {
+    -fx-font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", "Noto Sans Arabic", serif;
+    -fx-font-size: 24px;
+    -fx-text-fill: -sg-accent;
+}
+
+.hero-prayer-time {
+    -fx-font-size: 15px;
+    -fx-text-fill: -sg-text-secondary;
+}
+
+.hero-countdown {
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 52px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-accent;
+}
+
+.hero-countdown-caption {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sg-text-muted;
+}
+
+/* ----- prayer rows ------------------------------------------------------ */
+
+.prayer-row {
+    -fx-padding: 10 12 10 12;
+    -fx-background-radius: 10;
+    -fx-background-color: transparent;
+}
+
+.prayer-row:hover {
+    -fx-background-color: -sg-row-hover;
+}
+
+.prayer-row:next {
+    -fx-background-color: -sg-row-next;
+    -fx-border-color: -sg-accent-border;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 10;
+}
+
+.prayer-row:past .prayer-row-name,
+.prayer-row:past .prayer-row-time,
+.prayer-row:past .prayer-row-arabic {
+    -fx-opacity: 0.45;
+}
+
+.prayer-row-name {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-text-primary;
+}
+
+.prayer-row-arabic {
+    -fx-font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", "Noto Sans Arabic", serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: -sg-text-muted;
+}
+
+.prayer-row-time {
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sg-text-primary;
+}
+
+.prayer-row:next .prayer-row-time {
+    -fx-text-fill: -sg-accent;
+}
+
+.row-separator .line {
+    -fx-border-color: -sg-divider transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ----- badges ----------------------------------------------------------- */
+
+.badge-ramadan {
+    -fx-background-color: -sg-accent-soft;
+    -fx-text-fill: -sg-accent;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 10 4 10;
+    -fx-background-radius: 999;
+}
+
+/* ----- buttons ---------------------------------------------------------- */
+
+.primary-button {
+    -fx-background-color: -sg-accent;
+    -fx-text-fill: -sg-on-accent;
+    -fx-font-weight: bold;
+    -fx-padding: 8 18 8 18;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+}
+
+.primary-button:hover {
+    -fx-background-color: -sg-accent-hover;
+}
+
+.ghost-button,
+.ghost-button-small {
+    -fx-background-color: -sg-ghost-fill;
+    -fx-text-fill: -sg-text-primary;
+    -fx-border-color: -sg-card-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-cursor: hand;
+}
+
+.ghost-button {
+    -fx-padding: 8 18 8 18;
+}
+
+.ghost-button-small {
+    -fx-padding: 5 12 5 12;
+    -fx-font-size: 12px;
+}
+
+.ghost-button:hover,
+.ghost-button-small:hover {
+    -fx-background-color: -sg-ghost-hover;
+    -fx-border-color: -sg-accent-border;
+}
+
+.pill-toggle {
+    -fx-background-color: -sg-ghost-fill;
+    -fx-text-fill: -sg-text-secondary;
+    -fx-border-color: -sg-card-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 6 16 6 16;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+.pill-toggle:selected {
+    -fx-background-color: -sg-accent-soft;
+    -fx-text-fill: -sg-accent;
+    -fx-border-color: -sg-accent-border;
+}
+
+/* ----- form controls ---------------------------------------------------- */
+
+.field-label {
+    -fx-text-fill: -sg-text-secondary;
+    -fx-font-size: 13px;
+}
+
+.text-field,
+.spinner .text-field,
+.combo-box {
+    -fx-background-color: -sg-input-fill;
+    -fx-text-fill: -sg-text-primary;
+    -fx-prompt-text-fill: -sg-text-muted;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: -sg-card-border;
+    -fx-border-width: 1;
+    -fx-padding: 7 10 7 10;
+}
+
+.text-field:focused,
+.combo-box:focused {
+    -fx-border-color: -sg-accent;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -sg-text-primary;
+    -fx-background-color: transparent;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: -sg-surface;
+    -fx-border-color: -sg-card-border;
+    -fx-background-radius: 10;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover {
+    -fx-background-color: -sg-accent-soft;
+    -fx-text-fill: -sg-accent;
+}
+
+.check-box {
+    -fx-text-fill: -sg-text-secondary;
+}
+
+.check-box .box {
+    -fx-background-color: -sg-input-fill;
+    -fx-border-color: -sg-card-border;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+.check-box:selected .box {
+    -fx-background-color: -sg-accent;
+    -fx-border-color: -sg-accent;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: -sg-on-accent;
+}
+
+/*
+ * The Spinner is a composite control: without styling the container itself it
+ * keeps Modena's light background, which is glaringly wrong in a dark theme -
+ * most visibly when the control is disabled.
+ */
+.spinner {
+    -fx-background-color: -sg-input-fill;
+    -fx-background-radius: 8;
+    -fx-border-color: -sg-card-border;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.spinner > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.spinner:focused {
+    -fx-border-color: -sg-accent;
+}
+
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: -sg-ghost-fill;
+}
+
+.spinner .increment-arrow,
+.spinner .decrement-arrow {
+    -fx-background-color: -sg-text-secondary;
+}
+
+/* A single, consistent treatment for every disabled control. */
+.spinner:disabled,
+.text-field:disabled,
+.combo-box:disabled,
+.check-box:disabled,
+.button:disabled,
+.toggle-button:disabled {
+    -fx-opacity: 0.42;
+}
+
+.numeric-field {
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+}
+
+.tooltip {
+    -fx-background-color: -sg-tooltip-fill;
+    -fx-text-fill: -sg-text-primary;
+    -fx-background-radius: 8;
+    -fx-font-size: 12px;
+    -fx-padding: 8 12 8 12;
+}
+
+/* ----- scrollbars ------------------------------------------------------- */
+
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -sg-scroll-thumb;
+    -fx-background-radius: 999;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: -sg-accent-border;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: null;
+    -fx-padding: 0;
+}
+
+/* ----- status bar ------------------------------------------------------- */
+
+.status-bar {
+    -fx-background-color: -sg-surface-header;
+    -fx-border-color: -sg-divider transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.status-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sg-accent;
+}
+
+.status-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: -sg-text-muted;
+}
+
+/* ----- advisory notices ------------------------------------------------- */
+
+.approximation-notice {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sg-text-muted;
+    -fx-background-color: -sg-ghost-fill;
+    -fx-background-radius: 8;
+    -fx-padding: 8 12 8 12;
+}

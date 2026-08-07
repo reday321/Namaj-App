@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Salah Guardian
+GenericName=Prayer Times
+Comment=APPLICATION_DESCRIPTION
+Exec=APPLICATION_LAUNCHER
+Icon=APPLICATION_ICON
+Terminal=false
+Type=Application
+Categories=DEPLOY_BUNDLE_CATEGORY
+Keywords=prayer;salah;namaz;adhan;islam;qibla;muslim;
+StartupNotify=true
+StartupWMClass=com-ctrends-salahguardian-Launcher
+DESKTOP_MIMES
