@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata. This is what the Ubuntu App Center, GNOME Software and
+  KDE Discover read to build the store listing: the name, the description, the
+  screenshots and the safety declarations.
+
+  Validate with:  appstreamcli validate packaging/salah-guardian.metainfo.xml
+-->
+<component type="desktop-application">
+  <id>com.ctrends.SalahGuardian</id>
+  <launchable type="desktop-id">salah-guardian.desktop</launchable>
+
+  <name>Salah Guardian</name>
+  <summary>Prayer time reminder for the Linux desktop</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="com.ctrends">
+    <name>CTrends Software</name>
+  </developer>
+
+  <description>
+    <p>
+      Salah Guardian reminds you of the five daily prayers, calculated for
+      wherever you are. It runs quietly in the system tray and needs no account,
+      no sign-in and no internet connection after the first setup.
+    </p>
+    <p>Prayer times</p>
+    <ul>
+      <li>Fajr, Sunrise, Dhuhr, Asr, Maghrib and Isha, with tomorrow calculated in advance</li>
+      <li>Twelve conventions including Muslim World League, Diyanet, Karachi, ISNA and Umm al-Qura, plus custom twilight angles</li>
+      <li>Shafi and Hanafi madhab, and per-prayer minute adjustments to match your local mosque</li>
+      <li>High-latitude handling, including a nearest-latitude fallback inside the polar circles</li>
+    </ul>
+    <p>Reminders</p>
+    <ul>
+      <li>A configurable advance warning, then the prayer itself</li>
+      <li>Desktop notifications only — Salah Guardian never plays audio</li>
+      <li>An optional fullscreen Prayer Focus Mode, and an optional screen lock</li>
+      <li>Suhoor and iftar reminders during Ramadan, and a Friday Jumu'ah reminder</li>
+      <li>Silent mode, to mute everything without losing your settings</li>
+    </ul>
+    <p>Privacy</p>
+    <ul>
+      <li>No accounts, no telemetry, no analytics and no tracking of any kind</li>
+      <li>Your location never leaves your machine</li>
+      <li>The only outbound request is an optional city lookup you are asked about beforehand, and which stops once a location is stored</li>
+      <li>Settings and logs are stored readable only by you</li>
+    </ul>
+    <p>Also</p>
+    <ul>
+      <li>English and বাংলা, switchable from the dashboard, with optional Bengali numerals</li>
+      <li>Hijri and Gregorian dates</li>
+      <li>Dark, Light and Midnight themes</li>
+      <li>Optional start on login</li>
+    </ul>
+  </description>
+
+  <categories>
+    <category>Utility</category>
+    <category>Clock</category>
+  </categories>
+
+  <keywords>
+    <keyword>prayer</keyword>
+    <keyword>salah</keyword>
+    <keyword>namaz</keyword>
+    <keyword>adhan</keyword>
+    <keyword>islam</keyword>
+    <keyword>muslim</keyword>
+    <keyword>qibla</keyword>
+    <keyword>ramadan</keyword>
+    <keyword>hijri</keyword>
+  </keywords>
+
+  <!--
+    Screenshots must be served over HTTPS and reachable by the store's crawler.
+    These point at the repository's raw content, which resolves once the
+    repository is public; until then the store will report them unreachable.
+  -->
+  <screenshots>
+    <screenshot type="default">
+      <caption>Today's prayer times, the next prayer and a live countdown</caption>
+      <image>https://raw.githubusercontent.com/reday321/Namaj-App/main/docs/screenshots/dashboard.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The fullscreen Prayer Focus Mode reminder</caption>
+      <image>https://raw.githubusercontent.com/reday321/Namaj-App/main/docs/screenshots/focus-overlay.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Settings: location, calculation method, reminders and appearance</caption>
+      <image>https://raw.githubusercontent.com/reday321/Namaj-App/main/docs/screenshots/settings.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The complete interface in Bengali, with Bengali numerals</caption>
+      <image>https://raw.githubusercontent.com/reday321/Namaj-App/main/docs/screenshots/dashboard-bn.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A light theme is included</caption>
+      <image>https://raw.githubusercontent.com/reday321/Namaj-App/main/docs/screenshots/dashboard-light.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/reday321/Namaj-App</url>
+  <url type="bugtracker">https://github.com/reday321/Namaj-App/issues</url>
+  <url type="vcs-browser">https://github.com/reday321/Namaj-App</url>
+
+  <!-- Nothing objectionable, and nothing that shares user data. -->
+  <content_rating type="oars-1.1"/>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <recommends>
+    <display_length compare="ge">768</display_length>
+  </recommends>
+
+  <releases>
+    <release version="1.0.0" date="2026-08-08">
+      <description>
+        <p>First release.</p>
+        <ul>
+          <li>Prayer times for twelve calculation conventions, with Shafi and Hanafi madhab</li>
+          <li>Advance and prayer-time notifications, Prayer Focus Mode and an optional screen lock</li>
+          <li>English and Bengali interface</li>
+          <li>Ramadan and Jumu'ah reminders, Hijri dates, three themes</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

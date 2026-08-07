@@ -1,0 +1,154 @@
+# ---------------------------------------------------------------------------
+#  Salah Guardian - Snap package
+# ---------------------------------------------------------------------------
+#  Build:    snapcraft
+#  Install:  sudo snap install --dangerous ./salah-guardian_1.0.0_amd64.snap
+#  Publish:  snapcraft upload --release=stable salah-guardian_1.0.0_amd64.snap
+#
+#  Two of the interfaces below are NOT auto-connected and require review by the
+#  Snap Store team; see snap/README.md for the request text.
+# ---------------------------------------------------------------------------
+name: salah-guardian
+title: Salah Guardian
+base: core24
+version: '1.0.0'
+summary: Prayer time reminder for the Linux desktop
+description: |
+  Salah Guardian reminds you of the five daily prayers, calculated for wherever
+  you are.
+
+  * Detects your location, or lets you enter coordinates and stay fully offline
+  * Twelve calculation conventions, including Diyanet, Karachi, ISNA and
+    Umm al-Qura, with Shafi and Hanafi madhab
+  * Two reminders per prayer: a configurable advance warning, then the prayer
+    itself. Desktop notifications only, never audio.
+  * An optional fullscreen Prayer Focus Mode, and an optional screen lock
+  * Hijri date, Ramadan suhoor and iftar reminders, and a Friday Jumu'ah reminder
+  * English and Bengali, with Bengali numerals
+  * Dark, Light and Midnight themes
+
+  Your location never leaves your machine. The only outbound request is an
+  optional city lookup that you are asked about before it happens, and which
+  stops once a location is stored.
+
+grade: stable
+confinement: strict
+license: MIT
+source-code: https://github.com/reday321/Namaj-App
+issues: https://github.com/reday321/Namaj-App/issues
+website: https://github.com/reday321/Namaj-App
+
+platforms:
+  amd64:
+  arm64:
+
+# The gnome extension supplies GTK3, fonts, themes, icons and the cursor
+# configuration, and connects desktop, desktop-legacy, wayland, x11, opengl and
+# gsettings. JavaFX renders through GTK, so without it the application starts
+# but has no fonts and no theming.
+apps:
+  salah-guardian:
+    command: bin/salah-guardian
+    extensions: [gnome]
+    common-id: com.ctrends.SalahGuardian
+    desktop: usr/share/applications/salah-guardian.desktop
+    plugs:
+      # Auto-connected -----------------------------------------------------
+      - network            # the optional city lookup, nothing else
+      - unity7             # system tray (StatusNotifier / AppIndicator)
+      - autostart          # writes ~/.config/autostart when the user enables it
+      # Manual review required --------------------------------------------
+      - location-observe       # GeoClue2, for on-device location
+      - login-session-control  # loginctl lock-session, for the optional lock
+    environment:
+      # The bundled runtime is a jlink image; point it at the staged libraries
+      # rather than the host's, which a confined snap cannot see.
+      LD_LIBRARY_PATH: $SNAP/opt/salah-guardian/lib/runtime/lib:$LD_LIBRARY_PATH
+      # JavaFX picks its rendering pipeline at start-up; software fallback keeps
+      # it working on machines whose GL stack the sandbox cannot reach.
+      PRISM_ORDER: es2,sw
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+
+parts:
+  # -------------------------------------------------------------------------
+  #  The application itself, built exactly as the .deb is: gradle produces a
+  #  jpackage app-image containing a trimmed JRE, which is then staged whole.
+  #  Reusing jpackage rather than assembling a classpath by hand keeps the snap
+  #  and the .deb byte-identical in what they actually run.
+  # -------------------------------------------------------------------------
+  salah-guardian:
+    plugin: nil
+    source: .
+    build-packages:
+      - openjdk-21-jdk-headless
+      - fakeroot
+      - binutils
+    build-environment:
+      - JAVA_HOME: /usr/lib/jvm/java-21-openjdk-${CRAFT_ARCH_BUILD_FOR}
+      - GRADLE_USER_HOME: ${CRAFT_PART_BUILD}/.gradle
+    override-build: |
+      set -eu
+      ./gradlew --no-daemon --offline=false jpackageAppImage
+      install -d "${CRAFT_PART_INSTALL}/opt/salah-guardian"
+      cp -a build/jpackage/SalahGuardian/. "${CRAFT_PART_INSTALL}/opt/salah-guardian/"
+
+      # Launcher. The app-image binary is invoked directly; snapd has already
+      # set up the confinement and the gnome extension the environment.
+      install -d "${CRAFT_PART_INSTALL}/bin"
+      cat > "${CRAFT_PART_INSTALL}/bin/salah-guardian" <<'LAUNCHER'
+      #!/bin/bash
+      set -eu
+      # A confined snap gets its own XDG roots, so settings and logs land in
+      # ~/snap/salah-guardian/current/ rather than ~/.config. ConfigPaths
+      # already honours these, so nothing in the application needs to change.
+      export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$SNAP_USER_DATA/.config}"
+      export XDG_DATA_HOME="${XDG_DATA_HOME:-$SNAP_USER_DATA/.local/share}"
+      mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
+      exec "$SNAP/opt/salah-guardian/bin/SalahGuardian" "$@"
+      LAUNCHER
+      chmod +x "${CRAFT_PART_INSTALL}/bin/salah-guardian"
+
+      # Desktop entry and icons for the App Center listing and the app menu.
+      install -Dm644 packaging/salah-guardian.desktop \
+        "${CRAFT_PART_INSTALL}/usr/share/applications/salah-guardian.desktop"
+      sed -i 's|^Exec=.*|Exec=salah-guardian|; s|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/256x256/apps/salah-guardian.png|' \
+        "${CRAFT_PART_INSTALL}/usr/share/applications/salah-guardian.desktop"
+      # The Settings desktop action refers to the same wrapper.
+      sed -i 's|^Exec=/opt/salah-guardian/bin/SalahGuardian --settings|Exec=salah-guardian --settings|' \
+        "${CRAFT_PART_INSTALL}/usr/share/applications/salah-guardian.desktop"
+
+      for size in 16 24 32 48 64 128 256 512; do
+        src="packaging/icons/salah-guardian-${size}.png"
+        [ -f "$src" ] || continue
+        install -Dm644 "$src" \
+          "${CRAFT_PART_INSTALL}/usr/share/icons/hicolor/${size}x${size}/apps/salah-guardian.png"
+      done
+
+      install -Dm644 packaging/salah-guardian.metainfo.xml \
+        "${CRAFT_PART_INSTALL}/usr/share/metainfo/com.ctrends.SalahGuardian.metainfo.xml"
+    stage-packages:
+      # notify-send, for desktop notifications. The application falls back to a
+      # tray balloon and then the log without it, but this is the good path.
+      - libnotify-bin
+      # gdbus, used to talk to GeoClue2 on the system bus.
+      - libglib2.0-bin
+      # dbus-send and busctl, the screen-lock fallbacks after loginctl.
+      - dbus-bin
+      - systemd
+      # xdg-screensaver, the last lock fallback.
+      - xdg-utils
+      # `which`, used to probe for optional binaries.
+      - debianutils
+      # Shared libraries the bundled JRE and JavaFX link against.
+      - libasound2t64
+      - libxtst6
+      - libxi6
+      - libxrender1
+      - libfreetype6
+      - libfontconfig1
+    prime:
+      - -usr/share/doc
+      - -usr/share/man
+      - -usr/lib/systemd/system
+      - -usr/lib/systemd/user
+      - -lib/systemd

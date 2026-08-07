@@ -63,10 +63,33 @@ public final class DesktopEnvironment {
     }
 
     /**
+     * The root of a snap package, when running inside one.
+     *
+     * <p>A confined snap sees its own filesystem: the binaries it ships live
+     * under {@code $SNAP/usr/bin} rather than {@code /usr/bin}. Anything that
+     * resolves executables from a fixed list of system directories has to know
+     * about this prefix or it will find nothing.</p>
+     *
+     * @return the snap root, or empty when not running as a snap
+     */
+    public static java.util.Optional<String> snapRoot() {
+        String snap = System.getenv("SNAP");
+        return snap == null || snap.isBlank()
+                ? java.util.Optional.empty() : java.util.Optional.of(snap);
+    }
+
+    /**
+     * @return {@code true} when running inside a confined snap package
+     */
+    public static boolean isSnap() {
+        return snapRoot().isPresent();
+    }
+
+    /**
      * @return a short description used in the log banner and the about dialog
      */
     public static String describe() {
         String desktop = currentDesktop().isEmpty() ? "unknown" : currentDesktop();
-        return desktop + " / " + (isWayland() ? "wayland" : "x11");
+        return desktop + " / " + (isWayland() ? "wayland" : "x11") + (isSnap() ? " / snap" : "");
     }
 }

@@ -1,5 +1,6 @@
 package com.ctrends.salahguardian.service;
 
+import com.ctrends.salahguardian.utils.DesktopEnvironment;
 import com.ctrends.salahguardian.utils.ProcessResult;
 import com.ctrends.salahguardian.utils.ProcessRunner;
 import jakarta.inject.Singleton;
@@ -47,9 +48,26 @@ public class LinuxScreenLockService implements ScreenLockService {
 
     private static final Logger LOG = LoggerFactory.getLogger(LinuxScreenLockService.class);
 
-    /** Where a legitimate system binary lives. {@code $PATH} is not consulted. */
-    private static final List<String> TRUSTED_BIN_DIRS =
-            List.of("/usr/bin", "/bin", "/usr/local/bin");
+    /**
+     * Where a legitimate system binary lives. {@code $PATH} is not consulted,
+     * because a writable entry on it would let a local attacker substitute a
+     * binary that runs unattended five times a day.
+     *
+     * <p>Inside a snap the package's own binaries are under {@code $SNAP}, and
+     * that prefix is trusted for the same reason {@code /usr/bin} is: it is
+     * read-only and owned by the packaging, not by the user.</p>
+     */
+    private static List<String> trustedBinDirs() {
+        List<String> dirs = new ArrayList<>();
+        DesktopEnvironment.snapRoot().ifPresent(snap -> {
+            dirs.add(snap + "/usr/bin");
+            dirs.add(snap + "/bin");
+        });
+        dirs.add("/usr/bin");
+        dirs.add("/bin");
+        dirs.add("/usr/local/bin");
+        return dirs;
+    }
 
     private static final Duration LOCK_TIMEOUT = Duration.ofSeconds(6);
 
@@ -146,7 +164,7 @@ public class LinuxScreenLockService implements ScreenLockService {
         if (executable == null || executable.indexOf('/') >= 0) {
             return Optional.empty();
         }
-        for (String directory : TRUSTED_BIN_DIRS) {
+        for (String directory : trustedBinDirs()) {
             Path candidate = Path.of(directory, executable);
             if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) {
                 return Optional.of(candidate.toString());

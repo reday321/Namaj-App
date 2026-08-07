@@ -87,6 +87,8 @@ sudo apt install ./salah-guardian_1.0.0_amd64.deb
 sudo dnf install ./salah-guardian-1.0.0-1.x86_64.rpm
 ```
 
+**Snap** (Ubuntu App Center) — packaging is in [`snap/`](snap/README.md); not yet published.
+
 **Anything else** (Arch, NixOS, Slackware, or a no-root install)
 
 ```bash
