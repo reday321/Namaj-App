@@ -56,6 +56,7 @@ A light theme is included as well:
 | ⚖️ **Shafi and Hanafi** | The madhab moves Asr and nothing else. |
 | 🔔 **Two reminders per prayer** | *"🕌 Asr prayer starts in 5 minutes."* then *"🕌 It's time for Asr."* Delivered through libnotify. No audio. |
 | 🖥️ **Prayer Focus Mode** | A fullscreen dark overlay with Islamic geometry, a countdown ring, and Skip/Close. Escape and Alt+F4 are ignored. Closes itself after 5 minutes. |
+| 🔒 **Optional screen lock** | Can lock your desktop session at prayer time so you actually step away. Off by default, always preceded by a visible countdown and a **Don't lock** button. Never needs root and never logs you out. |
 | 📌 **System tray** | Dashboard, today's times, reminder toggles, settings, exit. |
 | 🌙 **Hijri, Ramadan, Jumu'ah** | Hijri date on every screen, suhoor/iftar reminders in Ramadan, a Friday morning Jumu'ah reminder. |
 | 🔇 **Silent mode** | Mute everything without losing your settings. |
@@ -105,7 +106,7 @@ Full details, including the one optional dependency, are in
 ```bash
 git clone <repository-url> salah-guardian
 cd salah-guardian
-./gradlew build           # compile + run the 185 unit tests
+./gradlew build           # compile + run the 192 unit tests
 ./gradlew run             # launch it
 ./gradlew jpackageDeb     # or jpackageRpm / jpackageAppImage
 ```

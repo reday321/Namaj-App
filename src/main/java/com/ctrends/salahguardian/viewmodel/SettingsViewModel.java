@@ -13,6 +13,7 @@ import com.ctrends.salahguardian.model.MadhabOption;
 import com.ctrends.salahguardian.prayer.PrayerScheduleService;
 import com.ctrends.salahguardian.service.AutostartService;
 import com.ctrends.salahguardian.service.PrayerSchedulerService;
+import com.ctrends.salahguardian.service.ScreenLockService;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import javafx.application.Platform;
@@ -54,6 +55,7 @@ public class SettingsViewModel {
     private final PrayerScheduleService scheduleService;
     private final PrayerSchedulerService schedulerService;
     private final AutostartService autostartService;
+    private final ScreenLockService screenLockService;
 
     // ----- location ---------------------------------------------------------
     private final BooleanProperty autoDetectLocation = new SimpleBooleanProperty(true);
@@ -82,6 +84,8 @@ public class SettingsViewModel {
     // ----- focus mode -------------------------------------------------------
     private final BooleanProperty focusModeEnabled = new SimpleBooleanProperty(true);
     private final IntegerProperty focusDurationSeconds = new SimpleIntegerProperty(300);
+    private final BooleanProperty lockScreenAtPrayerTime = new SimpleBooleanProperty(false);
+    private final IntegerProperty lockDelaySeconds = new SimpleIntegerProperty(30);
 
     // ----- appearance & startup --------------------------------------------
     private final ObjectProperty<Theme> theme = new SimpleObjectProperty<>(Theme.DARK);
@@ -114,12 +118,14 @@ public class SettingsViewModel {
                              LocationService locationService,
                              PrayerScheduleService scheduleService,
                              PrayerSchedulerService schedulerService,
-                             AutostartService autostartService) {
+                             AutostartService autostartService,
+                             ScreenLockService screenLockService) {
         this.configService = configService;
         this.locationService = locationService;
         this.scheduleService = scheduleService;
         this.schedulerService = schedulerService;
         this.autostartService = autostartService;
+        this.screenLockService = screenLockService;
         loadFromConfig();
         wireAutoSave();
     }
@@ -152,6 +158,8 @@ public class SettingsViewModel {
 
             focusModeEnabled.set(config.isFocusModeEnabled());
             focusDurationSeconds.set(config.getFocusDurationSeconds());
+            lockScreenAtPrayerTime.set(config.isLockScreenAtPrayerTime());
+            lockDelaySeconds.set(config.getLockDelaySeconds());
 
             theme.set(config.themeOption());
             language.set(config.languageOption());
@@ -216,6 +224,14 @@ public class SettingsViewModel {
                 value -> save(config -> config.setFocusModeEnabled(value), false, false));
         onChange(focusDurationSeconds,
                 value -> save(config -> config.setFocusDurationSeconds(value.intValue()), false, false));
+        onChange(lockScreenAtPrayerTime, value -> {
+            save(config -> config.setLockScreenAtPrayerTime(value), false, false);
+            if (value) {
+                LOG.info("Screen locking enabled - mechanism: {}", screenLockService.describe());
+            }
+        });
+        onChange(lockDelaySeconds,
+                value -> save(config -> config.setLockDelaySeconds(value.intValue()), false, false));
 
         onChange(autoDetectLocation, value -> {
             save(config -> config.setAutoDetectLocation(value), true, true);
@@ -346,6 +362,16 @@ public class SettingsViewModel {
     public BooleanProperty ramadanRemindersEnabledProperty() { return ramadanRemindersEnabled; }
     public BooleanProperty focusModeEnabledProperty() { return focusModeEnabled; }
     public IntegerProperty focusDurationSecondsProperty() { return focusDurationSeconds; }
+    public BooleanProperty lockScreenAtPrayerTimeProperty() { return lockScreenAtPrayerTime; }
+    public IntegerProperty lockDelaySecondsProperty() { return lockDelaySeconds; }
+
+    /**
+     * @return {@code true} when this desktop offers a way to lock the session,
+     *         so the setting is worth enabling
+     */
+    public boolean isScreenLockAvailable() {
+        return screenLockService.isAvailable();
+    }
     public ObjectProperty<Theme> themeProperty() { return theme; }
     public ObjectProperty<Language> languageProperty() { return language; }
     public BooleanProperty useLocalNumeralsProperty() { return useLocalNumerals; }

@@ -72,6 +72,20 @@ public class AppConfig {
 
     private boolean focusModeEnabled = true;
     private int focusDurationSeconds = 300;
+    /**
+     * Lock the desktop session when the focus overlay opens.
+     *
+     * <p>Off by default and deliberately so: locking is disruptive, and an
+     * application that starts locking the screen without being asked is an
+     * application people uninstall. The user opts in explicitly.</p>
+     */
+    private boolean lockScreenAtPrayerTime = false;
+    /**
+     * Grace period between the overlay appearing and the screen locking, in
+     * seconds. The overlay counts this down and offers a way out, so a lock
+     * never arrives without warning. Zero locks immediately.
+     */
+    private int lockDelaySeconds = 30;
 
     // ----- appearance / behaviour ------------------------------------------
 
@@ -148,6 +162,7 @@ public class AppConfig {
         timeZoneId = timeZoneId == null ? "" : timeZoneId.trim();
         reminderMinutes = clamp(reminderMinutes, 0, 60);
         focusDurationSeconds = clamp(focusDurationSeconds, 30, 3600);
+        lockDelaySeconds = clamp(lockDelaySeconds, 0, 300);
         fridayReminderHour = clamp(fridayReminderHour, 0, 23);
         customFajrAngle = clampAngle(customFajrAngle, CalculationMethodOption.DEFAULT_CUSTOM_FAJR_ANGLE);
         customIshaAngle = clampAngle(customIshaAngle, CalculationMethodOption.DEFAULT_CUSTOM_ISHA_ANGLE);
@@ -281,6 +296,8 @@ public class AppConfig {
         c.ramadanRemindersEnabled = ramadanRemindersEnabled;
         c.focusModeEnabled = focusModeEnabled;
         c.focusDurationSeconds = focusDurationSeconds;
+        c.lockScreenAtPrayerTime = lockScreenAtPrayerTime;
+        c.lockDelaySeconds = lockDelaySeconds;
         c.theme = theme;
         c.language = language;
         c.useLocalNumerals = useLocalNumerals;
@@ -372,6 +389,12 @@ public class AppConfig {
 
     public int getFocusDurationSeconds() { return focusDurationSeconds; }
     public void setFocusDurationSeconds(int focusDurationSeconds) { this.focusDurationSeconds = focusDurationSeconds; }
+
+    public boolean isLockScreenAtPrayerTime() { return lockScreenAtPrayerTime; }
+    public void setLockScreenAtPrayerTime(boolean value) { this.lockScreenAtPrayerTime = value; }
+
+    public int getLockDelaySeconds() { return lockDelaySeconds; }
+    public void setLockDelaySeconds(int lockDelaySeconds) { this.lockDelaySeconds = lockDelaySeconds; }
 
     public String getTheme() { return theme; }
     public void setTheme(String theme) { this.theme = theme; }

@@ -9,7 +9,9 @@ import com.ctrends.salahguardian.utils.TimeUtils;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -44,11 +46,15 @@ public class FocusOverlayViewModel {
     private final StringProperty gregorianDate = new SimpleStringProperty("");
     private final StringProperty hijriDate = new SimpleStringProperty("");
     private final DoubleProperty progress = new SimpleDoubleProperty(0.0);
+    private final StringProperty lockCountdown = new SimpleStringProperty("");
+    private final BooleanProperty lockPending = new SimpleBooleanProperty(false);
 
     private Timeline ticker;
     private Runnable onFinished = () -> { };
+    private Runnable onLockDue = () -> { };
     private int totalSeconds;
     private int remainingSeconds;
+    private int lockInSeconds = -1;
 
     /**
      * @param configService   supplies the overlay duration and clock format
@@ -68,7 +74,25 @@ public class FocusOverlayViewModel {
      * @param onFinished invoked on the JavaFX thread when the countdown expires
      */
     public void begin(PrayerTime prayer, boolean friday, Runnable onFinished) {
+        begin(prayer, friday, onFinished, () -> { }, false);
+    }
+
+    /**
+     * Prepares the overlay, optionally arming the screen lock countdown.
+     *
+     * @param prayer     the prayer being announced
+     * @param friday     whether today is a Friday
+     * @param onFinished invoked when the overlay's own countdown expires
+     * @param onLockDue  invoked when the lock grace period expires
+     * @param armLock    whether to count down to a screen lock at all
+     */
+    public void begin(PrayerTime prayer, boolean friday, Runnable onFinished,
+                      Runnable onLockDue, boolean armLock) {
         AppConfig config = configService.get();
+        this.onLockDue = onLockDue == null ? () -> { } : onLockDue;
+        this.lockInSeconds = armLock ? Math.max(0, config.getLockDelaySeconds()) : -1;
+        lockPending.set(armLock);
+        updateLockCountdown();
         this.onFinished = onFinished == null ? () -> { } : onFinished;
         this.totalSeconds = Math.max(1, config.getFocusDurationSeconds());
         this.remainingSeconds = totalSeconds;
@@ -98,6 +122,21 @@ public class FocusOverlayViewModel {
     }
 
     /**
+     * Cancels a pending screen lock, leaving the reminder itself on screen.
+     *
+     * <p>This is the escape hatch that makes automatic locking safe to offer:
+     * the user always sees it coming and can always stop it.</p>
+     */
+    public void cancelLock() {
+        if (lockPending.get()) {
+            lockInSeconds = -1;
+            lockPending.set(false);
+            lockCountdown.set("");
+            LOG.info("Screen lock cancelled by the user");
+        }
+    }
+
+    /**
      * @return seconds still remaining on the countdown
      */
     public int remainingSeconds() {
@@ -108,6 +147,19 @@ public class FocusOverlayViewModel {
         remainingSeconds--;
         updateClock();
         updateCountdown();
+
+        if (lockPending.get()) {
+            lockInSeconds--;
+            updateLockCountdown();
+            if (lockInSeconds <= 0) {
+                lockPending.set(false);
+                lockCountdown.set("");
+                LOG.info("Lock grace period expired - locking the session");
+                onLockDue.run();
+                return;
+            }
+        }
+
         if (remainingSeconds <= 0) {
             stop();
             LOG.info("Focus overlay countdown finished - closing");
@@ -120,6 +172,15 @@ public class FocusOverlayViewModel {
         countdown.set(Messages.localiseDigits(
                 String.format(java.util.Locale.ROOT, "%d:%02d", safe / 60, safe % 60)));
         progress.set(1.0 - ((double) safe / totalSeconds));
+    }
+
+    private void updateLockCountdown() {
+        if (!lockPending.get() || lockInSeconds < 0) {
+            lockCountdown.set("");
+            return;
+        }
+        lockCountdown.set(Messages.format("focus.locksIn",
+                Messages.localiseDigits(String.valueOf(Math.max(0, lockInSeconds)))));
     }
 
     private void updateClock() {
@@ -138,4 +199,6 @@ public class FocusOverlayViewModel {
     public StringProperty gregorianDateProperty() { return gregorianDate; }
     public StringProperty hijriDateProperty() { return hijriDate; }
     public DoubleProperty progressProperty() { return progress; }
+    public StringProperty lockCountdownProperty() { return lockCountdown; }
+    public BooleanProperty lockPendingProperty() { return lockPending; }
 }

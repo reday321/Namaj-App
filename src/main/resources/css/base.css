@@ -464,3 +464,9 @@
 .segmented-toggle .segment:selected:hover {
     -fx-background-color: -sg-accent-hover;
 }
+
+.field-warning {
+    -fx-font-size: 12px;
+    -fx-text-fill: -sg-text-muted;
+    -fx-font-style: italic;
+}

@@ -6,6 +6,8 @@ import com.ctrends.salahguardian.notification.CompositeNotificationService;
 import com.ctrends.salahguardian.notification.NotificationService;
 import com.ctrends.salahguardian.prayer.AdhanPrayerTimeCalculator;
 import com.ctrends.salahguardian.prayer.PrayerTimeCalculator;
+import com.ctrends.salahguardian.service.LinuxScreenLockService;
+import com.ctrends.salahguardian.service.ScreenLockService;
 import com.ctrends.salahguardian.view.TrayIconManager;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -33,6 +35,7 @@ public class AppModule extends AbstractModule {
         bind(ConfigService.class).to(JsonConfigService.class).in(Singleton.class);
         bind(PrayerTimeCalculator.class).to(AdhanPrayerTimeCalculator.class).in(Singleton.class);
         bind(NotificationService.class).to(CompositeNotificationService.class).in(Singleton.class);
+        bind(ScreenLockService.class).to(LinuxScreenLockService.class).in(Singleton.class);
     }
 
     /**

@@ -74,6 +74,7 @@ public class FocusOverlayView {
     private final FocusOverlayViewModel viewModel;
     private final Stage stage;
     private Consumer<Boolean> onClosed = skipped -> { };
+    private Runnable onLockDue = () -> { };
     private boolean closing;
 
     /**
@@ -95,8 +96,19 @@ public class FocusOverlayView {
      * @param friday whether today is a Friday
      */
     public void show(PrayerTime prayer, boolean friday) {
+        show(prayer, friday, false);
+    }
+
+    /**
+     * Shows the overlay, optionally arming the screen lock countdown.
+     *
+     * @param prayer  the prayer being announced
+     * @param friday  whether today is a Friday
+     * @param armLock whether the session should lock after the grace period
+     */
+    public void show(PrayerTime prayer, boolean friday, boolean armLock) {
         closing = false;
-        viewModel.begin(prayer, friday, () -> close(false));
+        viewModel.begin(prayer, friday, () -> close(false), () -> onLockDue.run(), armLock);
         stage.show();
         stage.setFullScreen(true);
         assertOnTop();
@@ -110,6 +122,14 @@ public class FocusOverlayView {
      */
     public void setOnClosed(Consumer<Boolean> handler) {
         this.onClosed = handler == null ? skipped -> { } : handler;
+    }
+
+    /**
+     * @param handler invoked when the lock grace period expires and the session
+     *                should be locked
+     */
+    public void setOnLockDue(Runnable handler) {
+        this.onLockDue = handler == null ? () -> { } : handler;
     }
 
     /**
@@ -268,7 +288,7 @@ public class FocusOverlayView {
                 viewModel.countdownProperty()));
 
         VBox centre = new VBox(10, ornament, callToPrayer, prayerName, arabicName,
-                prayerTime, countdownRing, remaining);
+                prayerTime, countdownRing, remaining, buildLockWarning());
         centre.setAlignment(Pos.CENTER);
         centre.getStyleClass().add("focus-centre");
         return centre;
@@ -315,6 +335,36 @@ public class FocusOverlayView {
         ringStack.setMaxSize(2 * radius + thickness, 2 * radius + thickness);
         ringStack.setPadding(new Insets(8, 0, 8, 0));
         return ringStack;
+    }
+
+    /**
+     * The screen-lock warning and its escape hatch.
+     *
+     * <p>Only visible when a lock is actually pending. Placing the countdown
+     * and the cancel button together, directly below the ring, is what keeps
+     * automatic locking acceptable: the user is told what is about to happen,
+     * how long they have, and exactly how to stop it.</p>
+     *
+     * @return the warning strip, hidden and unmanaged when no lock is armed
+     */
+    private HBox buildLockWarning() {
+        Label countdown = new Label();
+        countdown.getStyleClass().add("focus-lock-countdown");
+        countdown.textProperty().bind(viewModel.lockCountdownProperty());
+
+        Button cancel = new Button(Messages.get("focus.dontLock"));
+        cancel.getStyleClass().add("focus-button-ghost-small");
+        cancel.setOnAction(event -> viewModel.cancelLock());
+
+        HBox strip = new HBox(14, countdown, cancel);
+        strip.setAlignment(Pos.CENTER);
+        // Shrink to fit its contents; a full-width band reads as a page header
+        // rather than as a warning about something imminent.
+        strip.setMaxWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        strip.getStyleClass().add("focus-lock-warning");
+        strip.visibleProperty().bind(viewModel.lockPendingProperty());
+        strip.managedProperty().bind(strip.visibleProperty());
+        return strip;
     }
 
     private HBox buildFooter() {

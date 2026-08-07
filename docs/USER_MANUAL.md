@@ -134,6 +134,29 @@ point of the warning is to let you finish what you are doing.
 
 Turn it off in **Settings → Prayer focus mode**, or from the tray menu.
 
+### Locking the screen at prayer time
+
+**Settings → Prayer focus mode → Lock the screen at prayer time.** Off by default.
+
+With it on, the overlay shows an amber countdown — *"Screen locks in 30s"* — next to a
+**Don't lock** button. When the countdown reaches zero your desktop session locks and
+the overlay closes; you unlock it the same way you normally would.
+
+| | |
+|---|---|
+| **Lock after (seconds)** | 0–300. The default 30 gives you time to react. Set **0** to lock the instant the reminder appears. |
+| **How it locks** | `loginctl lock-session` where available, then the GNOME and freedesktop screensaver interfaces, then `xdg-screensaver`. |
+| **Privileges** | None. It only ever acts on your own session. |
+| **What it never does** | Log you out, suspend, or power off. Nothing unsaved is ever at risk. |
+
+If your desktop offers no lock mechanism at all, the setting is greyed out with an
+explanation rather than silently doing nothing.
+
+> **Use this deliberately.** A lock five times a day will eventually land during a video
+> call or a presentation. That is exactly what the countdown and **Don't lock** button
+> are for — but if you often can't be interrupted, leave it off and rely on the
+> notifications.
+
 > **On Wayland**, the compositor decides window stacking and may refuse the
 > always-on-top request. The overlay still opens fullscreen and still counts down.
 > On X11 it is always on top.
@@ -354,6 +377,12 @@ rather than showing you an empty timetable.
 Click **বাংলা** in the dashboard header. Everything changes at once — prayer names, dates, the Hijri calendar, notifications, the tray menu and settings. Click **EN** to switch back; both options stay visible precisely so you can always find your way back.
 
 Turn Bengali numerals (১২:০৫) on or off under **Settings → Appearance**.
+
+**Can the app lock my screen?**
+Yes, but only if you ask it to — **Settings → Prayer focus mode → Lock the screen at
+prayer time**, off by default. You always get a countdown and a **Don't lock** button
+first. It uses your own session's lock, so it never needs a password to set up and can
+never log you out or lose unsaved work.
 
 **Can I change the theme?**
 **Settings → Appearance → Theme**: *Dark*, *Light* or *Midnight*. It applies at once, to

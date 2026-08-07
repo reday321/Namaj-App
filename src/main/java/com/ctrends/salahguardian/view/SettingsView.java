@@ -248,10 +248,32 @@ public class SettingsView {
                 viewModel.focusDurationSecondsProperty().set(is));
         duration.disableProperty().bind(enabled.selectedProperty().not());
 
+        CheckBox lockScreen = new CheckBox(Messages.get("settings.lockScreen"));
+        lockScreen.setTooltip(new Tooltip(Messages.get("settings.tooltip.lockScreen")));
+        lockScreen.selectedProperty().bindBidirectional(viewModel.lockScreenAtPrayerTimeProperty());
+
+        Spinner<Integer> lockDelay = new Spinner<>(0, 300,
+                viewModel.lockDelaySecondsProperty().get(), 5);
+        lockDelay.setEditable(true);
+        lockDelay.setTooltip(new Tooltip(Messages.get("settings.tooltip.lockDelay")));
+        lockDelay.valueProperty().addListener((obs, was, is) ->
+                viewModel.lockDelaySecondsProperty().set(is));
+        lockDelay.disableProperty().bind(lockScreen.selectedProperty().not());
+
+        Label unavailable = new Label(Messages.get("settings.lockUnavailable"));
+        unavailable.getStyleClass().add("field-warning");
+        unavailable.setWrapText(true);
+        // Offering a switch that cannot do anything is worse than hiding it.
+        boolean lockPossible = viewModel.isScreenLockAvailable();
+        lockScreen.setDisable(!lockPossible);
+        unavailable.setVisible(!lockPossible);
+        unavailable.setManaged(!lockPossible);
+
         GridPane grid = grid();
         addRow(grid, 0, Messages.get("settings.focusDuration"), duration);
+        addRow(grid, 1, Messages.get("settings.lockDelay"), lockDelay);
 
-        card.add(enabled, grid);
+        card.add(enabled, lockScreen, unavailable, grid);
         return card;
     }
 

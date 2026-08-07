@@ -5,6 +5,7 @@ import com.ctrends.salahguardian.model.PrayerTime;
 import com.ctrends.salahguardian.model.ReminderKind;
 import com.ctrends.salahguardian.prayer.PrayerScheduleService;
 import com.ctrends.salahguardian.service.ReminderEvent;
+import com.ctrends.salahguardian.service.ScreenLockService;
 import com.ctrends.salahguardian.view.FocusOverlayView;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -32,6 +33,7 @@ public class FocusModeController {
 
     private final ConfigService configService;
     private final PrayerScheduleService scheduleService;
+    private final ScreenLockService screenLockService;
 
     private FocusOverlayView overlay;
     private Window owner;
@@ -41,9 +43,12 @@ public class FocusModeController {
      * @param scheduleService supplies the clock and date shown on the overlay
      */
     @Inject
-    public FocusModeController(ConfigService configService, PrayerScheduleService scheduleService) {
+    public FocusModeController(ConfigService configService,
+                               PrayerScheduleService scheduleService,
+                               ScreenLockService screenLockService) {
         this.configService = configService;
         this.scheduleService = scheduleService;
+        this.screenLockService = screenLockService;
     }
 
     /**
@@ -95,9 +100,43 @@ public class FocusModeController {
             overlay = new FocusOverlayView(configService, scheduleService, owner);
             overlay.setOnClosed(skipped ->
                     LOG.info("Focus overlay closed ({})", skipped ? "skipped" : "completed"));
+            overlay.setOnLockDue(this::lockSession);
         }
         boolean friday = prayer.time().getDayOfWeek() == DayOfWeek.FRIDAY;
-        overlay.show(prayer, friday);
+        overlay.show(prayer, friday, shouldLock());
+    }
+
+    /**
+     * @return {@code true} when the session should be locked for this reminder
+     */
+    private boolean shouldLock() {
+        if (!configService.get().isLockScreenAtPrayerTime()) {
+            return false;
+        }
+        if (!screenLockService.isAvailable()) {
+            LOG.warn("Screen locking is enabled but no lock mechanism was found - "
+                    + "showing the reminder without locking");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Locks the session and dismisses the overlay.
+     *
+     * <p>The overlay is closed rather than left underneath: once the session is
+     * locked the lock screen is the reminder, and leaving a fullscreen window
+     * counting down behind it serves no purpose.</p>
+     */
+    private void lockSession() {
+        boolean locked = screenLockService.lock();
+        if (!locked) {
+            LOG.warn("The session could not be locked - leaving the reminder on screen");
+            return;
+        }
+        if (overlay != null && overlay.isShowing()) {
+            overlay.close(false);
+        }
     }
 
     /**
