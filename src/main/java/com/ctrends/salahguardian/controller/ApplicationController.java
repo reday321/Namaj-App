@@ -3,6 +3,7 @@ package com.ctrends.salahguardian.controller;
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
 import com.ctrends.salahguardian.i18n.Messages;
+import com.ctrends.salahguardian.location.IpGeolocationProvider;
 import com.ctrends.salahguardian.location.LocationService;
 import com.ctrends.salahguardian.prayer.PrayerScheduleService;
 import com.ctrends.salahguardian.service.AutostartService;
@@ -18,6 +19,10 @@ import com.ctrends.salahguardian.viewmodel.SettingsViewModel;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +57,7 @@ public class ApplicationController implements PrayerEventListener {
 
     private final ConfigService configService;
     private final LocationService locationService;
+    private final IpGeolocationProvider ipGeolocationProvider;
     private final PrayerScheduleService scheduleService;
     private final PrayerSchedulerService schedulerService;
     private final DashboardViewModel dashboardViewModel;
@@ -85,6 +91,7 @@ public class ApplicationController implements PrayerEventListener {
     @Inject
     public ApplicationController(ConfigService configService,
                                  LocationService locationService,
+                                 IpGeolocationProvider ipGeolocationProvider,
                                  PrayerScheduleService scheduleService,
                                  PrayerSchedulerService schedulerService,
                                  DashboardViewModel dashboardViewModel,
@@ -94,6 +101,7 @@ public class ApplicationController implements PrayerEventListener {
                                  AutostartService autostartService) {
         this.configService = configService;
         this.locationService = locationService;
+        this.ipGeolocationProvider = ipGeolocationProvider;
         this.scheduleService = scheduleService;
         this.schedulerService = schedulerService;
         this.dashboardViewModel = dashboardViewModel;
@@ -155,7 +163,16 @@ public class ApplicationController implements PrayerEventListener {
         }
 
         syncAutostartState();
-        resolveLocationInBackground();
+
+        // The IP provider stays inert until the user has answered.
+        ipGeolocationProvider.setConsentCheck(
+                () -> configService.get().isNetworkLookupConsented());
+
+        if (configService.get().isNetworkLookupUndecided()) {
+            Platform.runLater(this::requestNetworkConsent);
+        } else {
+            resolveLocationInBackground();
+        }
     }
 
     /**
@@ -306,6 +323,44 @@ public class ApplicationController implements PrayerEventListener {
     /**
      * Resolves the location off the UI thread, then starts the scheduler.
      */
+    /**
+     * Puts the network question to the user, once, before anything leaves the
+     * machine.
+     *
+     * <p>Deliberately a blocking dialog rather than a banner: the request
+     * discloses the user's IP address to a third party and, for an application
+     * of this kind, implies their religion. That is not something to do first
+     * and mention later.</p>
+     */
+    private void requestNetworkConsent() {
+        Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+        dialog.setTitle(Messages.get("consent.title"));
+        dialog.setHeaderText(Messages.get("consent.header"));
+        dialog.setContentText(Messages.get("consent.body"));
+        dialog.getDialogPane().setMinWidth(520);
+        IconFactory.load(IconFactory.APP_ICON).ifPresent(icon ->
+                ((Stage) dialog.getDialogPane().getScene().getWindow()).getIcons().add(icon));
+
+        ButtonType allow = new ButtonType(Messages.get("consent.allow"), ButtonBar.ButtonData.YES);
+        ButtonType manual = new ButtonType(Messages.get("consent.manual"), ButtonBar.ButtonData.NO);
+        dialog.getButtonTypes().setAll(manual, allow);
+        // Staying offline is the default action, so dismissing the dialog with
+        // Escape declines rather than silently agreeing.
+        ((Button) dialog.getDialogPane().lookupButton(manual)).setDefaultButton(true);
+
+        boolean agreed = dialog.showAndWait().filter(allow::equals).isPresent();
+        configService.update(config -> config.setNetworkLookupConsented(agreed));
+        LOG.info("Network location lookup {} by the user", agreed ? "allowed" : "declined");
+
+        if (agreed) {
+            resolveLocationInBackground();
+        } else {
+            dashboardViewModel.statusMessageProperty().set(Messages.get("consent.declined"));
+            showSettings();
+            schedulerService.start();
+        }
+    }
+
     private void resolveLocationInBackground() {
         startupExecutor.submit(() -> {
             try {

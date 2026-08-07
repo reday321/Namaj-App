@@ -61,6 +61,7 @@ public class IpGeolocationProvider implements LocationProvider {
 
     private final HttpClient httpClient;
     private final List<Endpoint> endpoints;
+    private volatile java.util.function.BooleanSupplier consentCheck;
 
     /**
      * Creates a provider using the default endpoint list.
@@ -104,9 +105,25 @@ public class IpGeolocationProvider implements LocationProvider {
 
     @Override
     public boolean isAvailable() {
-        // Cheap to attempt and self-limiting through its own timeouts, so it is
-        // always considered available; a dead network simply yields empty().
+        // Availability is gated on consent, not on the network. This is the one
+        // request that leaves the machine, and it hands a third party the user's
+        // IP address - which, for this application, implies their religion.
+        // Until they have agreed, the provider reports itself unavailable and
+        // the chain falls through to whatever is stored.
+        if (consentCheck != null && !consentCheck.getAsBoolean()) {
+            LOG.debug("IP geolocation skipped - the user has not agreed to it");
+            return false;
+        }
         return true;
+    }
+
+    /**
+     * Supplies the gate for {@link #isAvailable()}.
+     *
+     * @param consentCheck yields {@code true} once the user has agreed
+     */
+    public void setConsentCheck(java.util.function.BooleanSupplier consentCheck) {
+        this.consentCheck = consentCheck;
     }
 
     @Override
