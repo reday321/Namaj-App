@@ -2,6 +2,7 @@ package com.ctrends.salahguardian.viewmodel;
 
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.model.PrayerTime;
 import com.ctrends.salahguardian.prayer.PrayerScheduleService;
 import com.ctrends.salahguardian.utils.TimeUtils;
@@ -116,16 +117,16 @@ public class FocusOverlayViewModel {
 
     private void updateCountdown() {
         int safe = Math.max(0, remainingSeconds);
-        countdown.set(String.format("%d:%02d", safe / 60, safe % 60));
+        countdown.set(Messages.localiseDigits(
+                String.format(java.util.Locale.ROOT, "%d:%02d", safe / 60, safe % 60)));
         progress.set(1.0 - ((double) safe / totalSeconds));
     }
 
     private void updateClock() {
         AppConfig config = configService.get();
         ZonedDateTime now = scheduleService.now();
-        currentTime.set(now.format(config.isUse24HourClock()
-                ? TimeUtils.CLOCK_24H : TimeUtils.CLOCK_12H));
-        gregorianDate.set(now.format(TimeUtils.LONG_DATE));
+        currentTime.set(now.format(TimeUtils.clock(config.isUse24HourClock())));
+        gregorianDate.set(now.format(TimeUtils.longDate()));
         hijriDate.set(TimeUtils.toHijriString(now.toLocalDate()));
     }
 

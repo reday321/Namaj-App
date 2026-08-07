@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import java.time.Instant;
 import java.util.Objects;
 
@@ -100,9 +102,11 @@ public record GeoLocation(
      * @return coordinates formatted as {@code 41.0082°N, 28.9784°E}
      */
     public String coordinateLabel() {
-        return String.format("%.4f°%s, %.4f°%s",
+        // Locale.ROOT keeps the decimal point a dot regardless of locale;
+        // the digits are then converted to the active numeral set separately.
+        return Messages.localiseDigits(String.format(java.util.Locale.ROOT, "%.4f°%s, %.4f°%s",
                 Math.abs(latitude), latitude >= 0 ? "N" : "S",
-                Math.abs(longitude), longitude >= 0 ? "E" : "W");
+                Math.abs(longitude), longitude >= 0 ? "E" : "W"));
     }
 
     /**

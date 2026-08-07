@@ -9,7 +9,7 @@
    ========================================================================== */
 
 .root {
-    -fx-font-family: "Inter", "Ubuntu", "Cantarell", "Noto Sans", "DejaVu Sans", sans-serif;
+    -fx-font-family: "Inter", "Ubuntu", "Cantarell", "Noto Sans", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", "DejaVu Sans", sans-serif;
     -fx-font-size: 13px;
     -fx-background-color: -sg-background;
 }
@@ -94,7 +94,7 @@
 }
 
 .card-clock {
-    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", monospace;
     -fx-font-size: 34px;
     -fx-font-weight: bold;
     -fx-text-fill: -sg-accent;
@@ -120,7 +120,7 @@
 }
 
 .hero-countdown {
-    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", monospace;
     -fx-font-size: 52px;
     -fx-font-weight: bold;
     -fx-text-fill: -sg-accent;
@@ -169,7 +169,7 @@
 }
 
 .prayer-row-time {
-    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", monospace;
     -fx-font-size: 17px;
     -fx-font-weight: bold;
     -fx-text-fill: -sg-text-primary;
@@ -358,7 +358,7 @@
 }
 
 .numeric-field {
-    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", monospace;
 }
 
 .tooltip {

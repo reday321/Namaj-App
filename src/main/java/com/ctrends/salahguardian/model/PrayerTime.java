@@ -1,8 +1,9 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -14,8 +15,8 @@ import java.util.Objects;
  */
 public record PrayerTime(PrayerName name, ZonedDateTime time) implements Comparable<PrayerTime> {
 
-    private static final DateTimeFormatter TIME_24H = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter TIME_12H = DateTimeFormatter.ofPattern("hh:mm a");
+    private static final String PATTERN_24H = "HH:mm";
+    private static final String PATTERN_12H = "hh:mm a";
 
     public PrayerTime {
         Objects.requireNonNull(name, "name");
@@ -27,7 +28,10 @@ public record PrayerTime(PrayerName name, ZonedDateTime time) implements Compara
      * @return the formatted clock time
      */
     public String formatted(boolean use24Hour) {
-        return time.format(use24Hour ? TIME_24H : TIME_12H);
+        // Built per call rather than cached in a static: the formatter carries
+        // both the locale and the numeral set, and both change when the user
+        // switches language.
+        return time.format(Messages.formatter(use24Hour ? PATTERN_24H : PATTERN_12H));
     }
 
     /**

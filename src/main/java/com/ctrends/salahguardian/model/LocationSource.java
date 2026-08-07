@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 /**
  * Identifies which strategy produced a {@link GeoLocation}.
  *
@@ -32,6 +34,6 @@ public enum LocationSource {
      * @return human readable label shown in the dashboard location card
      */
     public String displayName() {
-        return displayName;
+        return Messages.get("source." + name());
     }
 }

@@ -128,6 +128,41 @@ class AppConfigTest {
     }
 
     @Test
+    @DisplayName("migrates a v1 config to the 12 hour default")
+    void migratesV1ClockDefault() {
+        AppConfig legacy = new AppConfig();
+        legacy.setSchemaVersion(1);
+        legacy.setUse24HourClock(true);   // v1's default, never chosen by the user
+
+        legacy.migrate().normalise();
+
+        assertFalse(legacy.isUse24HourClock(), "v1 users should move to the 12 hour default");
+        assertEquals(AppConfig.CURRENT_SCHEMA_VERSION, legacy.getSchemaVersion());
+    }
+
+    @Test
+    @DisplayName("migration is idempotent and leaves a v2 choice alone")
+    void migrationIsIdempotent() {
+        AppConfig current = new AppConfig();
+        current.setSchemaVersion(AppConfig.CURRENT_SCHEMA_VERSION);
+        current.setUse24HourClock(true);  // a deliberate v2 choice
+
+        current.migrate().migrate().normalise();
+
+        assertTrue(current.isUse24HourClock(), "a deliberate 24 hour choice must survive");
+        assertEquals(AppConfig.CURRENT_SCHEMA_VERSION, current.getSchemaVersion());
+    }
+
+    @Test
+    @DisplayName("defaults to a 12 hour clock and the system language")
+    void defaultsToTwelveHourAndSystemLanguage() {
+        AppConfig config = new AppConfig();
+        assertFalse(config.isUse24HourClock());
+        assertEquals(com.ctrends.salahguardian.i18n.Language.SYSTEM, config.languageOption());
+        assertTrue(config.isUseLocalNumerals());
+    }
+
+    @Test
     @DisplayName("copies detach the adjustment array from the original")
     void copyIsIndependent() {
         AppConfig original = new AppConfig();

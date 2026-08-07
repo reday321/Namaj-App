@@ -3,6 +3,7 @@ package com.ctrends.salahguardian.viewmodel;
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
 import com.ctrends.salahguardian.config.Theme;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.location.LocationService;
 import com.ctrends.salahguardian.model.DailyPrayerSchedule;
 import com.ctrends.salahguardian.model.GeoLocation;
@@ -64,7 +65,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
     private final PrayerSchedulerService schedulerService;
 
     // ----- location card ----------------------------------------------------
-    private final StringProperty locationLabel = new SimpleStringProperty("Detecting…");
+    private final StringProperty locationLabel = new SimpleStringProperty("");
     private final StringProperty coordinateLabel = new SimpleStringProperty("");
     private final StringProperty locationSourceLabel = new SimpleStringProperty("");
 
@@ -182,7 +183,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
             tick();
         } catch (RuntimeException e) {
             LOG.error("Dashboard refresh failed", e);
-            statusMessage.set("Could not refresh prayer times - see the log for details.");
+            statusMessage.set(Messages.get("status.refreshFailed"));
         }
     }
 
@@ -190,12 +191,12 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
      * Re-runs location detection off the UI thread, then refreshes.
      */
     public void refreshLocation() {
-        statusMessage.set("Detecting your location…");
+        statusMessage.set(Messages.get("status.detecting"));
         background.submit(() -> {
             GeoLocation location = locationService.refresh();
             scheduleService.invalidate();
             Platform.runLater(() -> {
-                statusMessage.set("Location updated: " + location.displayLabel());
+                statusMessage.set(Messages.format("status.locationUpdated", location.displayLabel()));
                 refreshAll();
                 schedulerService.reschedule();
             });
@@ -218,9 +219,8 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
         AppConfig config = configService.get();
         ZonedDateTime now = scheduleService.now();
 
-        currentTime.set(now.format(config.isUse24HourClock()
-                ? TimeUtils.CLOCK_24H : TimeUtils.CLOCK_12H));
-        gregorianDate.set(now.format(TimeUtils.LONG_DATE));
+        currentTime.set(now.format(TimeUtils.clock(config.isUse24HourClock())));
+        gregorianDate.set(now.format(TimeUtils.longDate()));
         hijriDate.set(config.isShowHijriDate() ? TimeUtils.toHijriString(now.toLocalDate()) : "");
         ramadan.set(TimeUtils.isRamadan(now.toLocalDate()));
 
@@ -232,15 +232,16 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
             nextPrayerArabic.set(next.prayer().name().arabicName());
             nextPrayerTime.set(next.prayer().formatted(config.isUse24HourClock()));
             countdown.set(next.formattedRemaining());
-            countdownCaption.set(next.tomorrow() ? "until tomorrow's " + next.prayer().name().displayName()
-                    : "until " + nextPrayerName.get());
+            countdownCaption.set(next.tomorrow()
+                    ? Messages.format("dashboard.untilTomorrow", next.prayer().name().displayName())
+                    : Messages.format("dashboard.until", nextPrayerName.get()));
             highlightRows(next.prayer(), now);
         } else {
             nextPrayerName.set("—");
             nextPrayerArabic.set("");
             nextPrayerTime.set("");
             countdown.set("--:--");
-            countdownCaption.set("No upcoming prayer could be calculated");
+            countdownCaption.set(Messages.get("dashboard.noUpcoming"));
         }
 
         // The timetable is rebuilt only when the civil day actually changes.
@@ -264,9 +265,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
         // Be explicit when the times are a convention rather than an
         // observation, which happens inside the polar circles.
         approximationNotice.set(today.isApproximated()
-                ? "Approximate times: at this latitude the sun does not cross the twilight "
-                        + "angles today, so the nearest-latitude convention (45°) is used."
-                : "");
+                ? Messages.get("dashboard.approximation") : "");
     }
 
     private List<PrayerRowViewModel> toRows(DailyPrayerSchedule schedule, AppConfig config) {
@@ -291,7 +290,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
                 .orElseGet(() -> configService.get().toGeoLocation());
         locationLabel.set(location.displayLabel());
         coordinateLabel.set(location.coordinateLabel());
-        locationSourceLabel.set("via " + location.source().displayName());
+        locationSourceLabel.set(Messages.format("dashboard.via", location.source().displayName()));
     }
 
     private void applyConfig() {
@@ -312,7 +311,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
     public void setRemindersEnabled(boolean enabled) {
         configService.update(config -> config.setNotificationsEnabled(enabled));
         schedulerService.reschedule();
-        statusMessage.set(enabled ? "Reminders enabled." : "Reminders disabled.");
+        statusMessage.set(Messages.get(enabled ? "status.remindersEnabled" : "status.remindersDisabled"));
     }
 
     /**
@@ -322,7 +321,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
      */
     public void setFocusModeEnabled(boolean enabled) {
         configService.update(config -> config.setFocusModeEnabled(enabled));
-        statusMessage.set(enabled ? "Prayer focus mode enabled." : "Prayer focus mode disabled.");
+        statusMessage.set(Messages.get(enabled ? "status.focusEnabled" : "status.focusDisabled"));
     }
 
     /**
@@ -334,7 +333,7 @@ public class DashboardViewModel implements PrayerEventListener, AutoCloseable {
     public void setSilentMode(boolean silent) {
         configService.update(config -> config.setSilentMode(silent));
         schedulerService.reschedule();
-        statusMessage.set(silent ? "Silent mode on - reminders are muted." : "Silent mode off.");
+        statusMessage.set(Messages.get(silent ? "status.silentOn" : "status.silentOff"));
     }
 
     // ----- property accessors ----------------------------------------------

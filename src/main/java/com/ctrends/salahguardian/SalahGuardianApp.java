@@ -1,7 +1,10 @@
 package com.ctrends.salahguardian;
 
 import com.ctrends.salahguardian.controller.ApplicationController;
+import com.ctrends.salahguardian.config.AppConfig;
+import com.ctrends.salahguardian.config.ConfigService;
 import com.ctrends.salahguardian.di.AppModule;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.utils.DesktopEnvironment;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -44,6 +47,11 @@ public class SalahGuardianApp extends Application {
         LOG.info("Salah Guardian starting on {} (Java {})",
                 DesktopEnvironment.describe(), System.getProperty("java.version"));
         injector = Guice.createInjector(new AppModule());
+
+        // The interface language must be active before any view is constructed,
+        // because scene graphs read their labels once at build time.
+        AppConfig config = injector.getInstance(ConfigService.class).get();
+        Messages.setLanguage(config.languageOption(), config.isUseLocalNumerals());
     }
 
     @Override

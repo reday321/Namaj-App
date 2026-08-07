@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import com.batoulapps.adhan.Madhab;
 
 /**
@@ -30,7 +32,7 @@ public enum MadhabOption {
      * @return label rendered in the settings combo box
      */
     public String displayName() {
-        return displayName;
+        return Messages.get("madhab." + name());
     }
 
     /**

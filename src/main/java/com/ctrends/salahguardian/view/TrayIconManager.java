@@ -2,6 +2,7 @@ package com.ctrends.salahguardian.view;
 
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.model.DailyPrayerSchedule;
 import com.ctrends.salahguardian.model.PrayerTime;
 import com.ctrends.salahguardian.model.UpcomingPrayer;
@@ -206,36 +207,36 @@ public class TrayIconManager {
     private PopupMenu buildMenu() {
         PopupMenu menu = new PopupMenu();
 
-        MenuItem open = new MenuItem("Open Dashboard");
+        MenuItem open = new MenuItem(Messages.get("tray.openDashboard"));
         open.addActionListener(event -> runOnFx(onOpenDashboard));
 
-        timesMenu = new Menu("Today's Prayer Times");
+        timesMenu = new Menu(Messages.get("tray.todaysTimes"));
 
-        remindersItem = new CheckboxMenuItem("Enable Reminders");
+        remindersItem = new CheckboxMenuItem(Messages.get("tray.enableReminders"));
         remindersItem.addItemListener(event -> {
             boolean enabled = remindersItem.getState();
             configService.update(config -> config.setNotificationsEnabled(enabled));
             LOG.info("Reminders {} from the tray menu", enabled ? "enabled" : "disabled");
         });
 
-        focusModeItem = new CheckboxMenuItem("Enable Prayer Focus Mode");
+        focusModeItem = new CheckboxMenuItem(Messages.get("tray.enableFocus"));
         focusModeItem.addItemListener(event -> {
             boolean enabled = focusModeItem.getState();
             configService.update(config -> config.setFocusModeEnabled(enabled));
             LOG.info("Prayer focus mode {} from the tray menu", enabled ? "enabled" : "disabled");
         });
 
-        silentItem = new CheckboxMenuItem("Silent Mode");
+        silentItem = new CheckboxMenuItem(Messages.get("tray.silentMode"));
         silentItem.addItemListener(event -> {
             boolean silent = silentItem.getState();
             configService.update(config -> config.setSilentMode(silent));
             LOG.info("Silent mode {} from the tray menu", silent ? "on" : "off");
         });
 
-        MenuItem settings = new MenuItem("Settings");
+        MenuItem settings = new MenuItem(Messages.get("tray.settings"));
         settings.addActionListener(event -> runOnFx(onOpenSettings));
 
-        MenuItem exit = new MenuItem("Exit");
+        MenuItem exit = new MenuItem(Messages.get("tray.exit"));
         exit.addActionListener(event -> runOnFx(onExit));
 
         menu.add(open);
@@ -254,10 +255,11 @@ public class TrayIconManager {
     private void updateTooltip(AppConfig config) {
         Optional<UpcomingPrayer> upcoming = scheduleService.nextPrayer();
         String tooltip = upcoming
-                .map(next -> "Salah Guardian\nNext: " + next.prayer().name().displayName()
-                        + " at " + next.prayer().formatted(config.isUse24HourClock())
-                        + " (in " + next.formattedRemaining() + ")")
-                .orElse("Salah Guardian");
+                .map(next -> Messages.get("app.name") + "\n" + Messages.format("tray.next",
+                        next.prayer().name().displayName(),
+                        next.prayer().formatted(config.isUse24HourClock()),
+                        next.formattedRemaining()))
+                .orElse(Messages.get("app.name"));
         trayIcon.setToolTip(tooltip);
     }
 
@@ -276,7 +278,7 @@ public class TrayIconManager {
             timesMenu.add(item);
         }
         timesMenu.addSeparator();
-        MenuItem openDashboard = new MenuItem("Show full timetable…");
+        MenuItem openDashboard = new MenuItem(Messages.get("tray.showFullTimetable"));
         openDashboard.addActionListener(event -> runOnFx(onOpenDashboard));
         timesMenu.add(openDashboard);
     }

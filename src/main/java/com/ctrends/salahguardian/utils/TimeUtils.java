@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.utils;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,24 +22,29 @@ import java.util.Locale;
  */
 public final class TimeUtils {
 
-    /** Long Gregorian format, e.g. {@code Friday, 7 August 2026}. */
-    public static final DateTimeFormatter LONG_DATE =
-            DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.ENGLISH);
+    /**
+     * Long Gregorian date, e.g. {@code Friday, 7 August 2026} or
+     * {@code শুক্রবার, ৭ আগস্ট ২০২৬}.
+     *
+     * <p>Built per call rather than held in a {@code static final}: a formatter
+     * captures its locale at construction, so a cached one would keep rendering
+     * in whichever language happened to be active when the class was loaded.</p>
+     *
+     * @return a formatter bound to the active interface language
+     */
+    public static DateTimeFormatter longDate() {
+        return Messages.formatter("EEEE, d MMMM yyyy");
+    }
 
-    /** Wall clock with seconds, e.g. {@code 19:04:22}. */
-    public static final DateTimeFormatter CLOCK_24H =
-            DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ENGLISH);
-
-    /** Wall clock with seconds in 12 hour form, e.g. {@code 07:04:22 PM}. */
-    public static final DateTimeFormatter CLOCK_12H =
-            DateTimeFormatter.ofPattern("hh:mm:ss a", Locale.ENGLISH);
-
-    /** Islamic month names in the order used by {@link HijrahChronology}. */
-    private static final String[] HIJRI_MONTHS = {
-            "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
-            "Jumada al-Ula", "Jumada al-Akhirah", "Rajab", "Sha'ban",
-            "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
-    };
+    /**
+     * Wall clock with seconds, e.g. {@code 19:04:22} or {@code 07:04:22 PM}.
+     *
+     * @param use24Hour {@code true} for 24 hour, {@code false} for 12 hour
+     * @return a formatter bound to the active interface language
+     */
+    public static DateTimeFormatter clock(boolean use24Hour) {
+        return Messages.formatter(use24Hour ? "HH:mm:ss" : "hh:mm:ss a");
+    }
 
     /** Index of Ramadan in the Hijri calendar. */
     public static final int RAMADAN_MONTH = 9;
@@ -79,19 +86,21 @@ public final class TimeUtils {
     public static String humanise(Duration duration) {
         long totalMinutes = Math.max(0, duration.toMinutes());
         if (totalMinutes == 0) {
-            return "less than a minute";
+            return Messages.get("duration.lessThanMinute");
         }
         long hours = totalMinutes / 60;
         long minutes = totalMinutes % 60;
         StringBuilder text = new StringBuilder();
         if (hours > 0) {
-            text.append(hours).append(hours == 1 ? " hour" : " hours");
+            text.append(Messages.format(hours == 1 ? "duration.hour" : "duration.hours",
+                    Messages.localiseDigits(String.valueOf(hours))));
         }
         if (minutes > 0) {
             if (!text.isEmpty()) {
                 text.append(' ');
             }
-            text.append(minutes).append(minutes == 1 ? " minute" : " minutes");
+            text.append(Messages.format(minutes == 1 ? "duration.minute" : "duration.minutes",
+                    Messages.localiseDigits(String.valueOf(minutes))));
         }
         return text.toString();
     }
@@ -108,9 +117,10 @@ public final class TimeUtils {
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
         long seconds = totalSeconds % 60;
-        return hours > 0
-                ? String.format("%d:%02d:%02d", hours, minutes, seconds)
-                : String.format("%02d:%02d", minutes, seconds);
+        String formatted = hours > 0
+                ? String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+                : String.format(Locale.ROOT, "%02d:%02d", minutes, seconds);
+        return Messages.localiseDigits(formatted);
     }
 
     /**
@@ -130,7 +140,10 @@ public final class TimeUtils {
             int day = hijri.get(ChronoField.DAY_OF_MONTH);
             int month = hijri.get(ChronoField.MONTH_OF_YEAR);
             int year = hijri.get(ChronoField.YEAR);
-            return day + " " + hijriMonthName(month) + " " + year + " AH";
+            return Messages.localiseDigits(String.valueOf(day)) + " "
+                    + hijriMonthName(month) + " "
+                    + Messages.localiseDigits(String.valueOf(year)) + " "
+                    + Messages.get("hijri.suffix");
         } catch (RuntimeException e) {
             // Dates outside the supported Umm al-Qura range (before 1300 AH).
             return "";
@@ -154,7 +167,9 @@ public final class TimeUtils {
      * @return the month's name, or the raw number when out of range
      */
     public static String hijriMonthName(int month) {
-        return month >= 1 && month <= 12 ? HIJRI_MONTHS[month - 1] : String.valueOf(month);
+        return month >= 1 && month <= 12
+                ? Messages.get("hijri." + month)
+                : String.valueOf(month);
     }
 
     /**

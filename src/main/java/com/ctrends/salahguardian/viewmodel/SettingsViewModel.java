@@ -3,6 +3,8 @@ package com.ctrends.salahguardian.viewmodel;
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
 import com.ctrends.salahguardian.config.Theme;
+import com.ctrends.salahguardian.i18n.Language;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.location.LocationService;
 import com.ctrends.salahguardian.model.CalculationMethodOption;
 import com.ctrends.salahguardian.model.GeoLocation;
@@ -83,6 +85,8 @@ public class SettingsViewModel {
 
     // ----- appearance & startup --------------------------------------------
     private final ObjectProperty<Theme> theme = new SimpleObjectProperty<>(Theme.DARK);
+    private final ObjectProperty<Language> language = new SimpleObjectProperty<>(Language.SYSTEM);
+    private final BooleanProperty useLocalNumerals = new SimpleBooleanProperty(true);
     private final BooleanProperty use24HourClock = new SimpleBooleanProperty(true);
     private final BooleanProperty startOnLogin = new SimpleBooleanProperty(false);
     private final BooleanProperty startMinimisedToTray = new SimpleBooleanProperty(true);
@@ -150,6 +154,8 @@ public class SettingsViewModel {
             focusDurationSeconds.set(config.getFocusDurationSeconds());
 
             theme.set(config.themeOption());
+            language.set(config.languageOption());
+            useLocalNumerals.set(config.isUseLocalNumerals());
             use24HourClock.set(config.isUse24HourClock());
             startOnLogin.set(config.isStartOnLogin());
             startMinimisedToTray.set(config.isStartMinimisedToTray());
@@ -165,6 +171,18 @@ public class SettingsViewModel {
     private void wireAutoSave() {
         // Changes that only affect presentation.
         onChange(theme, value -> save(config -> config.setTheme(value.name()), false, false));
+
+        // Language and numerals change how every string is rendered, so the
+        // active bundle is switched before the preference is persisted - that
+        // way the "Saved." confirmation already appears in the new language.
+        onChange(language, value -> {
+            Messages.setLanguage(value, useLocalNumerals.get());
+            save(config -> config.setLanguage(value.name()), false, false);
+        });
+        onChange(useLocalNumerals, value -> {
+            Messages.setLanguage(language.get(), value);
+            save(config -> config.setUseLocalNumerals(value), false, false);
+        });
         onChange(use24HourClock, value -> save(config -> config.setUse24HourClock(value), false, false));
         onChange(showHijriDate, value -> save(config -> config.setShowHijriDate(value), false, false));
         onChange(startMinimisedToTray,
@@ -229,7 +247,7 @@ public class SettingsViewModel {
         if (reschedule) {
             schedulerService.reschedule();
         }
-        statusMessage.set("Saved.");
+        statusMessage.set(Messages.get("status.saved"));
     }
 
     private void applyStartOnLogin(boolean enabled) {
@@ -242,11 +260,10 @@ public class SettingsViewModel {
             } finally {
                 suppressWrite = false;
             }
-            statusMessage.set("Start on login needs the installed package - "
-                    + "see the log for the path that was tried.");
+            statusMessage.set(Messages.get("status.autostartFailed"));
         } else {
-            statusMessage.set(enabled ? "Salah Guardian will start after login."
-                    : "Start on login disabled.");
+            statusMessage.set(Messages.get(enabled
+                    ? "status.autostartEnabled" : "status.autostartDisabled"));
         }
     }
 
@@ -259,7 +276,7 @@ public class SettingsViewModel {
         double lat = latitude.get();
         double lon = longitude.get();
         if (!GeoLocation.isValidLatitude(lat) || !GeoLocation.isValidLongitude(lon)) {
-            statusMessage.set("Latitude must be between -90 and 90, longitude between -180 and 180.");
+            statusMessage.set(Messages.get("status.invalidCoordinates"));
             return false;
         }
         GeoLocation location = locationService.setManualLocation(lat, lon, city.get(), country.get());
@@ -271,7 +288,7 @@ public class SettingsViewModel {
         }
         scheduleService.invalidate();
         schedulerService.reschedule();
-        statusMessage.set("Location set to " + location.displayLabel() + ".");
+        statusMessage.set(Messages.format("status.locationSet", location.displayLabel()));
         LOG.info("Manual location applied: {}", location.coordinateLabel());
         return true;
     }
@@ -280,7 +297,7 @@ public class SettingsViewModel {
      * Re-runs automatic detection off the UI thread.
      */
     public void redetectLocation() {
-        statusMessage.set("Detecting your location…");
+        statusMessage.set(Messages.get("status.detecting"));
         background.submit(() -> {
             GeoLocation detected = locationService.refresh();
             scheduleService.invalidate();
@@ -295,8 +312,8 @@ public class SettingsViewModel {
                 } finally {
                     suppressWrite = false;
                 }
-                statusMessage.set("Detected " + detected.displayLabel()
-                        + " via " + detected.source().displayName() + ".");
+                statusMessage.set(Messages.format("status.detected",
+                        detected.displayLabel(), detected.source().displayName()));
             });
         });
     }
@@ -330,6 +347,8 @@ public class SettingsViewModel {
     public BooleanProperty focusModeEnabledProperty() { return focusModeEnabled; }
     public IntegerProperty focusDurationSecondsProperty() { return focusDurationSeconds; }
     public ObjectProperty<Theme> themeProperty() { return theme; }
+    public ObjectProperty<Language> languageProperty() { return language; }
+    public BooleanProperty useLocalNumeralsProperty() { return useLocalNumerals; }
     public BooleanProperty use24HourClockProperty() { return use24HourClock; }
     public BooleanProperty startOnLoginProperty() { return startOnLogin; }
     public BooleanProperty startMinimisedToTrayProperty() { return startMinimisedToTray; }

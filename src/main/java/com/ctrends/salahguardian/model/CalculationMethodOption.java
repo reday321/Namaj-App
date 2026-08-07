@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import com.batoulapps.adhan.CalculationMethod;
 import com.batoulapps.adhan.CalculationParameters;
 import com.batoulapps.adhan.PrayerAdjustments;
@@ -73,7 +75,7 @@ public enum CalculationMethodOption {
      * @return label rendered in the settings combo box
      */
     public String displayName() {
-        return displayName;
+        return Messages.get("method." + name());
     }
 
     /**

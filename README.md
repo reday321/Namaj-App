@@ -24,6 +24,12 @@ before each one — quietly, on time, and without needing the internet after the
 |---|---|
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Settings](docs/screenshots/settings.png) |
 
+**বাংলা** — the whole interface, including prayer names, dates and Bengali numerals:
+
+| ড্যাশবোর্ড | সেটিংস |
+|---|---|
+| ![Dashboard in Bengali](docs/screenshots/dashboard-bn.png) | ![Settings in Bengali](docs/screenshots/settings-bn.png) |
+
 **Prayer Focus Mode** — a fullscreen, always-on-top reminder at prayer time:
 
 ![Focus overlay](docs/screenshots/focus-overlay.png)
@@ -54,6 +60,8 @@ A light theme is included as well:
 | 🌙 **Hijri, Ramadan, Jumu'ah** | Hijri date on every screen, suhoor/iftar reminders in Ramadan, a Friday morning Jumu'ah reminder. |
 | 🔇 **Silent mode** | Mute everything without losing your settings. |
 | 🚀 **Start on login** | A standard freedesktop autostart entry. |
+| 🌐 **English and Bengali** | The complete interface is translated — prayer names, dates, notifications, tray menu and settings — with optional Bengali numerals (১২:০৫). Follows your system language by default. |
+| 🕐 **12 or 24 hour clock** | 12 hour by default, switchable in Settings. |
 | 🎨 **Three themes** | Dark (default), Light, Midnight. Green accent, rounded corners, Arabic-aware typography. |
 
 ### Runs on
@@ -97,7 +105,7 @@ Full details, including the one optional dependency, are in
 ```bash
 git clone <repository-url> salah-guardian
 cd salah-guardian
-./gradlew build           # compile + run the 155 unit tests
+./gradlew build           # compile + run the 181 unit tests
 ./gradlew run             # launch it
 ./gradlew jpackageDeb     # or jpackageRpm / jpackageAppImage
 ```
@@ -127,6 +135,7 @@ src/main/java/com/ctrends/salahguardian/
 ├── config/                  AppConfig, ConfigService, JSON persistence, paths, themes
 ├── controller/              ApplicationController, FocusModeController
 ├── di/                      Guice bindings
+├── i18n/                    Language enum + Messages bundle lookup
 ├── location/                LocationProvider chain: GeoClue → IP → manual/cached
 ├── model/                   immutable domain types (records and enums)
 ├── notification/            libnotify → tray balloon → log fallback chain

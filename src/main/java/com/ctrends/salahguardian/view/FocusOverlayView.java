@@ -1,6 +1,7 @@
 package com.ctrends.salahguardian.view;
 
 import com.ctrends.salahguardian.config.ConfigService;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.model.PrayerTime;
 import com.ctrends.salahguardian.prayer.PrayerScheduleService;
 import com.ctrends.salahguardian.utils.DesktopEnvironment;
@@ -241,7 +242,7 @@ public class FocusOverlayView {
         Label ornament = new Label("۞");
         ornament.getStyleClass().add("focus-ornament");
 
-        Label callToPrayer = new Label("It is time for");
+        Label callToPrayer = new Label(Messages.get("focus.eyebrow"));
         callToPrayer.getStyleClass().add("focus-eyebrow");
 
         Label prayerName = new Label();
@@ -254,15 +255,17 @@ public class FocusOverlayView {
 
         Label prayerTime = new Label();
         prayerTime.getStyleClass().add("focus-prayer-time");
-        prayerTime.textProperty().bind(
-                Bindings.concat("Prayer time ", viewModel.prayerTimeProperty()));
+        prayerTime.textProperty().bind(Bindings.format(
+                Messages.get("focus.prayerTime").replace("{0}", "%s"),
+                viewModel.prayerTimeProperty()));
 
         StackPane countdownRing = buildCountdownRing();
 
         Label remaining = new Label();
         remaining.getStyleClass().add("focus-remaining-caption");
-        remaining.textProperty().bind(
-                Bindings.concat("This reminder closes in ", viewModel.countdownProperty()));
+        remaining.textProperty().bind(Bindings.format(
+                Messages.get("focus.closesIn").replace("{0}", "%s"),
+                viewModel.countdownProperty()));
 
         VBox centre = new VBox(10, ornament, callToPrayer, prayerName, arabicName,
                 prayerTime, countdownRing, remaining);
@@ -330,14 +333,14 @@ public class FocusOverlayView {
         VBox dates = new VBox(2, date, hijri);
         dates.setAlignment(Pos.CENTER_LEFT);
 
-        Button skip = new Button("Skip");
+        Button skip = new Button(Messages.get("focus.skip"));
         skip.getStyleClass().add("focus-button-ghost");
         skip.setOnAction(event -> {
             LOG.info("Focus overlay skipped by the user");
             close(true);
         });
 
-        Button dismiss = new Button("Close");
+        Button dismiss = new Button(Messages.get("focus.close"));
         dismiss.getStyleClass().add("focus-button-primary");
         dismiss.setDefaultButton(true);
         dismiss.setOnAction(event -> {

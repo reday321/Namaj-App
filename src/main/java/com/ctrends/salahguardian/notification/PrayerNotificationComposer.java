@@ -1,5 +1,6 @@
 package com.ctrends.salahguardian.notification;
 
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.model.PrayerName;
 import com.ctrends.salahguardian.model.PrayerTime;
 import com.ctrends.salahguardian.model.ReminderKind;
@@ -37,9 +38,10 @@ public class PrayerNotificationComposer {
      */
     public NotificationRequest advanceWarning(PrayerTime prayer, Duration lead,
                                               boolean friday, boolean use24Hour) {
-        String name = prayer.name().displayName(friday);
-        String title = MOSQUE + " " + name + " prayer starts in " + TimeUtils.humanise(lead) + ".";
-        String body = "At " + prayer.formatted(use24Hour) + " • " + prayer.name().arabicName();
+        String title = Messages.format("notify.advance",
+                prayer.name().displayName(friday), TimeUtils.humanise(lead));
+        String body = Messages.format("notify.advanceBody",
+                prayer.formatted(use24Hour), prayer.name().arabicName());
         return NotificationRequest.info(title, body);
     }
 
@@ -52,9 +54,9 @@ public class PrayerNotificationComposer {
      * @return the notification to display
      */
     public NotificationRequest prayerStart(PrayerTime prayer, boolean friday, boolean use24Hour) {
-        String name = prayer.name().displayName(friday);
-        String title = MOSQUE + " It's time for " + name + ".";
-        String body = prayer.formatted(use24Hour) + " • " + prayer.name().arabicName();
+        String title = Messages.format("notify.start", prayer.name().displayName(friday));
+        String body = Messages.format("notify.startBody",
+                prayer.formatted(use24Hour), prayer.name().arabicName());
         return NotificationRequest.critical(title, body);
     }
 
@@ -66,10 +68,8 @@ public class PrayerNotificationComposer {
      * @return the notification to display
      */
     public NotificationRequest fridayReminder(PrayerTime jumuah, boolean use24Hour) {
-        String title = MOSQUE + " Jumu'ah is today.";
-        String body = "Congregational prayer at " + jumuah.formatted(use24Hour)
-                + ". Remember Surah al-Kahf.";
-        return NotificationRequest.info(title, body);
+        return NotificationRequest.info(Messages.get("notify.friday"),
+                Messages.format("notify.fridayBody", jumuah.formatted(use24Hour)));
     }
 
     /**
@@ -81,9 +81,9 @@ public class PrayerNotificationComposer {
      * @return the notification to display
      */
     public NotificationRequest suhoorReminder(PrayerTime fajr, Duration lead, boolean use24Hour) {
-        String title = CRESCENT + " Suhoor ends in " + TimeUtils.humanise(lead) + ".";
-        String body = "Fajr begins at " + fajr.formatted(use24Hour) + ".";
-        return NotificationRequest.info(title, body);
+        return NotificationRequest.info(
+                Messages.format("notify.suhoor", TimeUtils.humanise(lead)),
+                Messages.format("notify.suhoorBody", fajr.formatted(use24Hour)));
     }
 
     /**
@@ -94,9 +94,8 @@ public class PrayerNotificationComposer {
      * @return the notification to display
      */
     public NotificationRequest iftarReminder(PrayerTime maghrib, boolean use24Hour) {
-        String title = CRESCENT + " Iftar - time to break your fast.";
-        String body = "Maghrib at " + maghrib.formatted(use24Hour) + ".";
-        return NotificationRequest.critical(title, body);
+        return NotificationRequest.critical(Messages.get("notify.iftar"),
+                Messages.format("notify.iftarBody", maghrib.formatted(use24Hour)));
     }
 
     /**

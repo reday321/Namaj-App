@@ -1,6 +1,7 @@
 package com.ctrends.salahguardian.view;
 
 import com.ctrends.salahguardian.config.Theme;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.view.components.Card;
 import com.ctrends.salahguardian.view.components.PrayerRow;
 import com.ctrends.salahguardian.viewmodel.DashboardViewModel;
@@ -102,10 +103,10 @@ public class DashboardView {
     // ----- header -----------------------------------------------------------
 
     private Region buildHeader() {
-        Label title = new Label("Salah Guardian");
+        Label title = new Label(Messages.get("app.name"));
         title.getStyleClass().add("app-title");
 
-        Label arabic = new Label("حارس الصلاة");
+        Label arabic = new Label(Messages.get("app.tagline"));
         arabic.getStyleClass().add("app-title-arabic");
 
         VBox titles = new VBox(-2, title, arabic);
@@ -114,21 +115,21 @@ public class DashboardView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        ToggleButton silent = new ToggleButton("Silent");
+        ToggleButton silent = new ToggleButton(Messages.get("dashboard.silent"));
         silent.getStyleClass().add("pill-toggle");
-        silent.setTooltip(new Tooltip("Mute every reminder without changing your other settings"));
+        silent.setTooltip(new Tooltip(Messages.get("dashboard.tooltip.silent")));
         silent.setSelected(viewModel.silentModeProperty().get());
         viewModel.silentModeProperty().addListener((obs, was, is) -> silent.setSelected(is));
         silent.setOnAction(event -> viewModel.setSilentMode(silent.isSelected()));
 
-        ToggleButton reminders = new ToggleButton("Reminders");
+        ToggleButton reminders = new ToggleButton(Messages.get("dashboard.reminders"));
         reminders.getStyleClass().add("pill-toggle");
-        reminders.setTooltip(new Tooltip("Enable or disable prayer notifications"));
+        reminders.setTooltip(new Tooltip(Messages.get("dashboard.tooltip.reminders")));
         reminders.setSelected(viewModel.remindersEnabledProperty().get());
         viewModel.remindersEnabledProperty().addListener((obs, was, is) -> reminders.setSelected(is));
         reminders.setOnAction(event -> viewModel.setRemindersEnabled(reminders.isSelected()));
 
-        Button settings = new Button("Settings");
+        Button settings = new Button(Messages.get("dashboard.settings"));
         settings.getStyleClass().add("ghost-button");
         settings.setOnAction(event -> onOpenSettings.run());
 
@@ -145,8 +146,8 @@ public class DashboardView {
         VBox column = new VBox(16,
                 buildHeroRow(),
                 buildContextRow(),
-                buildTimetableCard("Today's prayer times", viewModel.todayRows()),
-                buildTimetableCard("Tomorrow's prayer times", viewModel.tomorrowRows()));
+                buildTimetableCard(Messages.get("dashboard.todaysTimes"), viewModel.todayRows()),
+                buildTimetableCard(Messages.get("dashboard.tomorrowsTimes"), viewModel.tomorrowRows()));
         column.setPadding(new Insets(4, 24, 24, 24));
 
         ScrollPane scroller = new ScrollPane(column);
@@ -200,7 +201,7 @@ public class DashboardView {
                 Bindings.isNotEmpty(viewModel.approximationNoticeProperty()));
         approximation.managedProperty().bind(approximation.visibleProperty());
 
-        Card card = new Card("Next prayer").asAccent().growHorizontally();
+        Card card = new Card(Messages.get("dashboard.nextPrayer")).asAccent().growHorizontally();
         card.add(row, approximation);
 
         // A gentle fade whenever the prayer name changes, so the transition to
@@ -219,7 +220,7 @@ public class DashboardView {
      * when it is narrowed.
      */
     private Region buildContextRow() {
-        Card location = new Card("Current location").growHorizontally();
+        Card location = new Card(Messages.get("dashboard.currentLocation")).growHorizontally();
         Label place = new Label();
         place.getStyleClass().add("card-primary-value");
         place.textProperty().bind(viewModel.locationLabelProperty());
@@ -229,12 +230,12 @@ public class DashboardView {
         Label source = new Label();
         source.getStyleClass().add("card-caption");
         source.textProperty().bind(viewModel.locationSourceLabelProperty());
-        Button refresh = new Button("Detect again");
+        Button refresh = new Button(Messages.get("dashboard.detectAgain"));
         refresh.getStyleClass().add("ghost-button-small");
         refresh.setOnAction(event -> onRefreshLocation.run());
         location.add(place, coordinates, source, refresh);
 
-        Card date = new Card("Date").growHorizontally();
+        Card date = new Card(Messages.get("dashboard.date")).growHorizontally();
         Label gregorian = new Label();
         gregorian.getStyleClass().add("card-primary-value");
         gregorian.textProperty().bind(viewModel.gregorianDateProperty());
@@ -243,13 +244,13 @@ public class DashboardView {
         hijri.textProperty().bind(viewModel.hijriDateProperty());
         hijri.visibleProperty().bind(Bindings.isNotEmpty(viewModel.hijriDateProperty()));
         hijri.managedProperty().bind(hijri.visibleProperty());
-        Label ramadan = new Label("Ramadan Mubarak");
+        Label ramadan = new Label(Messages.get("dashboard.ramadanBadge"));
         ramadan.getStyleClass().add("badge-ramadan");
         ramadan.visibleProperty().bind(viewModel.ramadanProperty());
         ramadan.managedProperty().bind(ramadan.visibleProperty());
         date.add(gregorian, hijri, ramadan);
 
-        Card clock = new Card("Current time").growHorizontally();
+        Card clock = new Card(Messages.get("dashboard.currentTime")).growHorizontally();
         Label time = new Label();
         time.getStyleClass().add("card-clock");
         time.textProperty().bind(viewModel.currentTimeProperty());
@@ -295,7 +296,7 @@ public class DashboardView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label hint = new Label("Closing this window keeps Salah Guardian running in the tray");
+        Label hint = new Label(Messages.get("dashboard.trayHint"));
         hint.getStyleClass().add("status-hint");
 
         HBox bar = new HBox(12, status, spacer, hint);

@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -45,8 +47,9 @@ public record UpcomingPrayer(PrayerTime prayer, Duration remaining, boolean tomo
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
         long seconds = totalSeconds % 60;
-        return hours > 0
-                ? String.format("%d:%02d:%02d", hours, minutes, seconds)
-                : String.format("%02d:%02d", minutes, seconds);
+        String formatted = hours > 0
+                ? String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+                : String.format(java.util.Locale.ROOT, "%02d:%02d", minutes, seconds);
+        return Messages.localiseDigits(formatted);
     }
 }

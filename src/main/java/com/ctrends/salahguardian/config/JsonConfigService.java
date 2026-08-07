@@ -142,7 +142,7 @@ public class JsonConfigService implements ConfigService {
                 return new AppConfig().normalise();
             }
             LOG.info("Loaded configuration from {}", configFile);
-            return loaded.normalise();
+            return loaded.migrate().normalise();
         } catch (JsonSyntaxException e) {
             quarantineCorruptFile(e);
             return new AppConfig().normalise();

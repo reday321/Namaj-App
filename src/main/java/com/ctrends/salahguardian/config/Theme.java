@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.config;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 /**
  * The visual themes shipped with the application.
  *
@@ -30,7 +32,7 @@ public enum Theme {
      * @return label rendered in the settings combo box
      */
     public String displayName() {
-        return displayName;
+        return Messages.get("theme." + name());
     }
 
     /**

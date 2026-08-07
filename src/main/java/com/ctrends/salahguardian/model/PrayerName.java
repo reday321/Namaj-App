@@ -1,5 +1,7 @@
 package com.ctrends.salahguardian.model;
 
+import com.ctrends.salahguardian.i18n.Messages;
+
 import java.util.Optional;
 
 /**
@@ -31,21 +33,35 @@ public enum PrayerName {
     /** Night prayer. */
     ISHA("Isha", "العشاء", true);
 
-    private final String displayName;
+    private final String englishName;
     private final String arabicName;
     private final boolean obligatory;
 
-    PrayerName(String displayName, String arabicName, boolean obligatory) {
-        this.displayName = displayName;
+    PrayerName(String englishName, String arabicName, boolean obligatory) {
+        this.englishName = englishName;
         this.arabicName = arabicName;
         this.obligatory = obligatory;
     }
 
     /**
-     * @return the transliterated English name, e.g. {@code "Maghrib"}
+     * The prayer's name in the active interface language.
+     *
+     * <p>Resolved through {@link Messages} on every call rather than cached,
+     * so a language change takes effect immediately without rebuilding the
+     * enum constants.</p>
+     *
+     * @return the localised name, e.g. {@code "Maghrib"} or {@code "মাগরিব"}
      */
     public String displayName() {
-        return displayName;
+        return Messages.get("prayer." + name());
+    }
+
+    /**
+     * @return the untranslated English name, used in log messages so that logs
+     *         stay readable regardless of the user's interface language
+     */
+    public String englishName() {
+        return englishName;
     }
 
     /**
@@ -70,7 +86,7 @@ public enum PrayerName {
      * @return the label to render for this entry
      */
     public String displayName(boolean friday) {
-        return friday && this == DHUHR ? "Jumu'ah" : displayName;
+        return friday && this == DHUHR ? Messages.get("prayer.JUMUAH") : displayName();
     }
 
     /**

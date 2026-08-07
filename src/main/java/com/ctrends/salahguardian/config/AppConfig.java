@@ -4,6 +4,7 @@ import com.ctrends.salahguardian.model.CalculationMethodOption;
 import com.ctrends.salahguardian.model.GeoLocation;
 import com.ctrends.salahguardian.model.HighLatitudeRuleOption;
 import com.ctrends.salahguardian.model.LocationSource;
+import com.ctrends.salahguardian.i18n.Language;
 import com.ctrends.salahguardian.model.MadhabOption;
 
 import java.time.Instant;
@@ -26,8 +27,14 @@ public class AppConfig {
 
     // ----- schema -----------------------------------------------------------
 
-    /** Schema version, incremented when a migration becomes necessary. */
-    private int schemaVersion = 1;
+    /**
+     * Current schema version. Bump this whenever a stored value needs
+     * reinterpreting, and add the corresponding step to {@link #migrate()}.
+     */
+    public static final int CURRENT_SCHEMA_VERSION = 2;
+
+    /** Schema version of the document this instance was loaded from. */
+    private int schemaVersion = CURRENT_SCHEMA_VERSION;
 
     // ----- location ---------------------------------------------------------
 
@@ -69,12 +76,58 @@ public class AppConfig {
     // ----- appearance / behaviour ------------------------------------------
 
     private String theme = Theme.DARK.name();
-    private boolean use24HourClock = true;
+    private String language = Language.SYSTEM.name();
+    /**
+     * Render digits in the interface language's own numeral set, e.g. Bengali
+     * {@code ১২:০৫}. Ignored for languages written with Latin digits.
+     */
+    private boolean useLocalNumerals = true;
+    /**
+     * A 12 hour clock is the default: it is what most of the world reads a
+     * prayer timetable in, and it is the norm across South Asia, the Gulf and
+     * North America. Users who prefer 24 hour can switch in Settings.
+     */
+    private boolean use24HourClock = false;
     private boolean startOnLogin = false;
     private boolean startMinimisedToTray = true;
     private boolean showHijriDate = true;
 
     // ----- derived helpers --------------------------------------------------
+
+    /**
+     * Upgrades a configuration written by an older version of the application.
+     *
+     * <p>Migrations run once, in order, before {@link #normalise()}. Each one
+     * must be safe to apply to a document that has already been through it,
+     * because a crash between the migration and the save would otherwise leave
+     * the file in a half-upgraded state.</p>
+     *
+     * @return {@code this}, for chaining
+     */
+    public AppConfig migrate() {
+        if (schemaVersion < 2) {
+            // v1 defaulted to a 24 hour clock. v2 defaults to 12 hour, which is
+            // what most of the world reads a prayer timetable in. Existing users
+            // were never asked, so they are moved to the new default rather than
+            // left on a value they never chose; anyone who prefers 24 hour can
+            // set it in Settings and that choice then survives, because the
+            // migration only ever runs against a v1 document.
+            use24HourClock = false;
+            LoggerHolder.LOG.info("Migrated configuration from schema v{} to v2: "
+                    + "the clock now defaults to 12 hour", schemaVersion);
+        }
+        schemaVersion = CURRENT_SCHEMA_VERSION;
+        return this;
+    }
+
+    /**
+     * Holder so that {@link AppConfig} stays a plain bean for Gson while still
+     * being able to report what a migration did.
+     */
+    private static final class LoggerHolder {
+        static final org.slf4j.Logger LOG =
+                org.slf4j.LoggerFactory.getLogger(AppConfig.class);
+    }
 
     /**
      * Clamps every field into its valid range. Called after loading and before
@@ -106,7 +159,7 @@ public class AppConfig {
             }
         }
         if (schemaVersion <= 0) {
-            schemaVersion = 1;
+            schemaVersion = CURRENT_SCHEMA_VERSION;
         }
         return this;
     }
@@ -182,6 +235,13 @@ public class AppConfig {
     }
 
     /**
+     * @return the resolved interface language
+     */
+    public Language languageOption() {
+        return Language.parseOrDefault(language, Language.SYSTEM);
+    }
+
+    /**
      * @return {@code true} when notifications should actually be delivered,
      *         i.e. enabled and not muted by silent mode
      */
@@ -222,6 +282,8 @@ public class AppConfig {
         c.focusModeEnabled = focusModeEnabled;
         c.focusDurationSeconds = focusDurationSeconds;
         c.theme = theme;
+        c.language = language;
+        c.useLocalNumerals = useLocalNumerals;
         c.use24HourClock = use24HourClock;
         c.startOnLogin = startOnLogin;
         c.startMinimisedToTray = startMinimisedToTray;
@@ -313,6 +375,12 @@ public class AppConfig {
 
     public String getTheme() { return theme; }
     public void setTheme(String theme) { this.theme = theme; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+
+    public boolean isUseLocalNumerals() { return useLocalNumerals; }
+    public void setUseLocalNumerals(boolean useLocalNumerals) { this.useLocalNumerals = useLocalNumerals; }
 
     public boolean isUse24HourClock() { return use24HourClock; }
     public void setUse24HourClock(boolean use24HourClock) { this.use24HourClock = use24HourClock; }

@@ -1,6 +1,8 @@
 package com.ctrends.salahguardian.view;
 
 import com.ctrends.salahguardian.config.Theme;
+import com.ctrends.salahguardian.i18n.Language;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.model.CalculationMethodOption;
 import com.ctrends.salahguardian.model.HighLatitudeRuleOption;
 import com.ctrends.salahguardian.model.MadhabOption;
@@ -95,9 +97,9 @@ public class SettingsView {
     }
 
     private Region buildHeader() {
-        Label title = new Label("Settings");
+        Label title = new Label(Messages.get("settings.title"));
         title.getStyleClass().add("app-title");
-        Label subtitle = new Label("Changes are saved automatically");
+        Label subtitle = new Label(Messages.get("settings.subtitle"));
         subtitle.getStyleClass().add("app-subtitle");
         VBox header = new VBox(-2, title, subtitle);
         header.getStyleClass().add("app-header");
@@ -108,12 +110,10 @@ public class SettingsView {
     // ----- cards ------------------------------------------------------------
 
     private Region buildLocationCard() {
-        Card card = new Card("Location").growHorizontally();
+        Card card = new Card(Messages.get("settings.location")).growHorizontally();
 
-        CheckBox autoDetect = new CheckBox("Detect my location automatically");
-        autoDetect.setTooltip(new Tooltip(
-                "Tries GeoClue first, then IP geolocation. Turn this off to keep "
-                        + "the coordinates you enter below."));
+        CheckBox autoDetect = new CheckBox(Messages.get("settings.autoDetect"));
+        autoDetect.setTooltip(new Tooltip(Messages.get("settings.tooltip.autoDetect")));
         autoDetect.selectedProperty().bindBidirectional(viewModel.autoDetectLocationProperty());
 
         TextField latitude = numericField(viewModel.latitudeProperty().get());
@@ -130,7 +130,7 @@ public class SettingsView {
         viewModel.longitudeProperty().addListener((obs, was, is) ->
                 longitude.setText(String.format("%.6f", is.doubleValue())));
 
-        Button apply = new Button("Apply coordinates");
+        Button apply = new Button(Messages.get("settings.applyCoordinates"));
         apply.getStyleClass().add("primary-button");
         apply.setOnAction(event -> {
             parseInto(latitude, viewModel.latitudeProperty());
@@ -138,15 +138,15 @@ public class SettingsView {
             viewModel.applyManualLocation();
         });
 
-        Button detect = new Button("Detect now");
+        Button detect = new Button(Messages.get("settings.detectNow"));
         detect.getStyleClass().add("ghost-button-small");
         detect.setOnAction(event -> viewModel.redetectLocation());
 
         GridPane grid = grid();
-        addRow(grid, 0, "Latitude", latitude);
-        addRow(grid, 1, "Longitude", longitude);
-        addRow(grid, 2, "City", city);
-        addRow(grid, 3, "Country", country);
+        addRow(grid, 0, Messages.get("settings.latitude"), latitude);
+        addRow(grid, 1, Messages.get("settings.longitude"), longitude);
+        addRow(grid, 2, Messages.get("settings.city"), city);
+        addRow(grid, 3, Messages.get("settings.country"), country);
 
         HBox actions = new HBox(10, apply, detect);
         actions.setAlignment(Pos.CENTER_LEFT);
@@ -156,29 +156,28 @@ public class SettingsView {
     }
 
     private Region buildCalculationCard() {
-        Card card = new Card("Prayer time calculation").growHorizontally();
+        Card card = new Card(Messages.get("settings.calculation")).growHorizontally();
 
         ComboBox<CalculationMethodOption> method = new ComboBox<>();
         method.getItems().setAll(CalculationMethodOption.values());
         method.setConverter(converter(CalculationMethodOption::displayName));
         method.valueProperty().bindBidirectional(viewModel.calculationMethodProperty());
         method.setMaxWidth(Double.MAX_VALUE);
-        method.setTooltip(new Tooltip("The twilight angle convention used for Fajr and Isha"));
+        method.setTooltip(new Tooltip(Messages.get("settings.tooltip.method")));
 
         ComboBox<MadhabOption> madhab = new ComboBox<>();
         madhab.getItems().setAll(MadhabOption.values());
         madhab.setConverter(converter(MadhabOption::displayName));
         madhab.valueProperty().bindBidirectional(viewModel.madhabProperty());
         madhab.setMaxWidth(Double.MAX_VALUE);
-        madhab.setTooltip(new Tooltip("Affects the Asr time only"));
+        madhab.setTooltip(new Tooltip(Messages.get("settings.tooltip.madhab")));
 
         ComboBox<HighLatitudeRuleOption> highLatitude = new ComboBox<>();
         highLatitude.getItems().setAll(HighLatitudeRuleOption.values());
         highLatitude.setConverter(converter(HighLatitudeRuleOption::displayName));
         highLatitude.valueProperty().bindBidirectional(viewModel.highLatitudeRuleProperty());
         highLatitude.setMaxWidth(Double.MAX_VALUE);
-        highLatitude.setTooltip(new Tooltip(
-                "Used where the sun never reaches the twilight angle, above roughly 48 degrees"));
+        highLatitude.setTooltip(new Tooltip(Messages.get("settings.tooltip.highLatitude")));
 
         Spinner<Double> fajrAngle = angleSpinner(viewModel.customFajrAngleProperty().get());
         Spinner<Double> ishaAngle = angleSpinner(viewModel.customIshaAngleProperty().get());
@@ -194,54 +193,52 @@ public class SettingsView {
         ishaAngle.disableProperty().bind(customSelected.not());
 
         GridPane grid = grid();
-        addRow(grid, 0, "Method", method);
-        addRow(grid, 1, "Madhab", madhab);
-        addRow(grid, 2, "High latitude rule", highLatitude);
-        addRow(grid, 3, "Custom Fajr angle", fajrAngle);
-        addRow(grid, 4, "Custom Isha angle", ishaAngle);
+        addRow(grid, 0, Messages.get("settings.method"), method);
+        addRow(grid, 1, Messages.get("settings.madhab"), madhab);
+        addRow(grid, 2, Messages.get("settings.highLatitude"), highLatitude);
+        addRow(grid, 3, Messages.get("settings.customFajrAngle"), fajrAngle);
+        addRow(grid, 4, Messages.get("settings.customIshaAngle"), ishaAngle);
 
         card.add(grid);
         return card;
     }
 
     private Region buildReminderCard() {
-        Card card = new Card("Reminders").growHorizontally();
+        Card card = new Card(Messages.get("settings.reminders")).growHorizontally();
 
-        CheckBox notifications = new CheckBox("Enable desktop notifications");
+        CheckBox notifications = new CheckBox(Messages.get("settings.enableNotifications"));
         notifications.selectedProperty().bindBidirectional(viewModel.notificationsEnabledProperty());
 
-        CheckBox atPrayerTime = new CheckBox("Notify at the prayer time itself");
+        CheckBox atPrayerTime = new CheckBox(Messages.get("settings.remindAtTime"));
         atPrayerTime.selectedProperty().bindBidirectional(viewModel.remindAtPrayerTimeProperty());
 
-        CheckBox silent = new CheckBox("Silent mode (mute all reminders)");
+        CheckBox silent = new CheckBox(Messages.get("settings.silentMode"));
         silent.selectedProperty().bindBidirectional(viewModel.silentModeProperty());
 
-        CheckBox friday = new CheckBox("Friday reminder for Jumu'ah");
+        CheckBox friday = new CheckBox(Messages.get("settings.fridayReminder"));
         friday.selectedProperty().bindBidirectional(viewModel.fridayReminderEnabledProperty());
 
-        CheckBox ramadan = new CheckBox("Suhoor and iftar reminders during Ramadan");
+        CheckBox ramadan = new CheckBox(Messages.get("settings.ramadanReminders"));
         ramadan.selectedProperty().bindBidirectional(viewModel.ramadanRemindersEnabledProperty());
 
         Spinner<Integer> minutes = new Spinner<>(0, 60, viewModel.reminderMinutesProperty().get());
         minutes.setEditable(true);
-        minutes.setTooltip(new Tooltip("Set to 0 to switch the advance warning off"));
+        minutes.setTooltip(new Tooltip(Messages.get("settings.tooltip.remindBefore")));
         minutes.valueProperty().addListener((obs, was, is) ->
                 viewModel.reminderMinutesProperty().set(is));
 
         GridPane grid = grid();
-        addRow(grid, 0, "Remind me before (minutes)", minutes);
+        addRow(grid, 0, Messages.get("settings.remindBefore"), minutes);
 
         card.add(notifications, grid, atPrayerTime, friday, ramadan, silent);
         return card;
     }
 
     private Region buildFocusCard() {
-        Card card = new Card("Prayer focus mode").growHorizontally();
+        Card card = new Card(Messages.get("settings.focusMode")).growHorizontally();
 
-        CheckBox enabled = new CheckBox("Show the fullscreen reminder at prayer time");
-        enabled.setTooltip(new Tooltip(
-                "Opens a fullscreen overlay instead of locking the screen. "
-                        + "Escape and Alt+F4 are ignored; use Skip or Close."));
+        CheckBox enabled = new CheckBox(Messages.get("settings.enableFocus"));
+        enabled.setTooltip(new Tooltip(Messages.get("settings.tooltip.focus")));
         enabled.selectedProperty().bindBidirectional(viewModel.focusModeEnabledProperty());
 
         Spinner<Integer> duration = new Spinner<>(30, 3600,
@@ -252,14 +249,14 @@ public class SettingsView {
         duration.disableProperty().bind(enabled.selectedProperty().not());
 
         GridPane grid = grid();
-        addRow(grid, 0, "Overlay duration (seconds)", duration);
+        addRow(grid, 0, Messages.get("settings.focusDuration"), duration);
 
         card.add(enabled, grid);
         return card;
     }
 
     private Region buildAppearanceCard() {
-        Card card = new Card("Appearance").growHorizontally();
+        Card card = new Card(Messages.get("settings.appearance")).growHorizontally();
 
         ComboBox<Theme> theme = new ComboBox<>();
         theme.getItems().setAll(Theme.values());
@@ -267,29 +264,43 @@ public class SettingsView {
         theme.valueProperty().bindBidirectional(viewModel.themeProperty());
         theme.setMaxWidth(Double.MAX_VALUE);
 
-        CheckBox clock24 = new CheckBox("Use a 24 hour clock");
+        CheckBox clock24 = new CheckBox(Messages.get("settings.clock24"));
         clock24.selectedProperty().bindBidirectional(viewModel.use24HourClockProperty());
 
-        CheckBox hijri = new CheckBox("Show the Hijri date");
+        CheckBox hijri = new CheckBox(Messages.get("settings.showHijri"));
         hijri.selectedProperty().bindBidirectional(viewModel.showHijriDateProperty());
 
-        GridPane grid = grid();
-        addRow(grid, 0, "Theme", theme);
+        ComboBox<Language> language = new ComboBox<>();
+        language.getItems().setAll(Language.values());
+        language.setConverter(converter(Language::toString));
+        language.valueProperty().bindBidirectional(viewModel.languageProperty());
+        language.setMaxWidth(Double.MAX_VALUE);
+        language.setTooltip(new Tooltip(Messages.get("settings.tooltip.language")));
 
-        card.add(grid, clock24, hijri);
+        CheckBox localNumerals = new CheckBox(Messages.get("settings.localNumerals"));
+        localNumerals.selectedProperty().bindBidirectional(viewModel.useLocalNumeralsProperty());
+        // Only meaningful for languages written with their own digits.
+        localNumerals.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> viewModel.languageProperty().get() == null
+                        || !viewModel.languageProperty().get().hasOwnNumerals(),
+                viewModel.languageProperty()));
+
+        GridPane grid = grid();
+        addRow(grid, 0, Messages.get("settings.language"), language);
+        addRow(grid, 1, Messages.get("settings.theme"), theme);
+
+        card.add(grid, localNumerals, clock24, hijri);
         return card;
     }
 
     private Region buildStartupCard() {
-        Card card = new Card("Startup").growHorizontally();
+        Card card = new Card(Messages.get("settings.startup")).growHorizontally();
 
-        CheckBox startOnLogin = new CheckBox("Start Salah Guardian when I log in");
-        startOnLogin.setTooltip(new Tooltip(
-                "Writes ~/.config/autostart/salah-guardian.desktop. "
-                        + "Requires the installed package rather than a development build."));
+        CheckBox startOnLogin = new CheckBox(Messages.get("settings.startOnLogin"));
+        startOnLogin.setTooltip(new Tooltip(Messages.get("settings.tooltip.startOnLogin")));
         startOnLogin.selectedProperty().bindBidirectional(viewModel.startOnLoginProperty());
 
-        CheckBox minimised = new CheckBox("Start minimised to the system tray");
+        CheckBox minimised = new CheckBox(Messages.get("settings.startMinimised"));
         minimised.selectedProperty().bindBidirectional(viewModel.startMinimisedToTrayProperty());
 
         card.add(startOnLogin, minimised);

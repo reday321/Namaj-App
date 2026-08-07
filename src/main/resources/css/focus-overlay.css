@@ -7,6 +7,15 @@
    makes the overlay read as an announcement rather than as a lock screen.
    ========================================================================== */
 
+.focus-prayer-name,
+.focus-eyebrow,
+.focus-remaining-caption,
+.focus-date,
+.focus-button-primary,
+.focus-button-ghost {
+    -fx-font-family: "Inter", "Ubuntu", "Cantarell", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", "DejaVu Sans", sans-serif;
+}
+
 .focus-root {
     -fx-background-color: rgba(5, 12, 9, 0.93);
 }
@@ -55,7 +64,7 @@
 }
 
 .focus-countdown {
-    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", monospace;
     -fx-font-size: 54px;
     -fx-font-weight: bold;
     -fx-text-fill: #f8fafc;
@@ -83,7 +92,7 @@
 }
 
 .focus-clock {
-    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    -fx-font-family: "JetBrains Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Noto Sans Bengali", "Noto Serif Bengali", "Mukti", "Lohit Bengali", monospace;
     -fx-font-size: 26px;
     -fx-text-fill: rgba(226, 232, 240, 0.85);
 }

@@ -2,6 +2,7 @@ package com.ctrends.salahguardian.controller;
 
 import com.ctrends.salahguardian.config.AppConfig;
 import com.ctrends.salahguardian.config.ConfigService;
+import com.ctrends.salahguardian.i18n.Messages;
 import com.ctrends.salahguardian.location.LocationService;
 import com.ctrends.salahguardian.prayer.PrayerScheduleService;
 import com.ctrends.salahguardian.service.AutostartService;
@@ -118,7 +119,7 @@ public class ApplicationController implements PrayerEventListener {
         dashboardView.setOnOpenSettings(this::showSettings);
         dashboardView.setOnRefreshLocation(dashboardViewModel::refreshLocation);
 
-        primaryStage.setTitle("Salah Guardian");
+        primaryStage.setTitle(Messages.get("app.name"));
         primaryStage.setScene(dashboardView.scene());
         primaryStage.setMinWidth(720);
         primaryStage.setMinHeight(560);
@@ -138,6 +139,10 @@ public class ApplicationController implements PrayerEventListener {
         focusModeController.setOwner(primaryStage);
         schedulerService.addListener(this);
 
+        // A scene graph reads its labels once, when it is built, so a language
+        // change has to rebuild the windows rather than just repaint them.
+        Messages.addChangeListener(() -> Platform.runLater(this::rebuildForLanguageChange));
+
         trayAvailable = installTray();
         dashboardViewModel.start();
 
@@ -151,6 +156,46 @@ public class ApplicationController implements PrayerEventListener {
 
         syncAutostartState();
         resolveLocationInBackground();
+    }
+
+    /**
+     * Rebuilds every window in the newly selected language.
+     *
+     * <p>The settings window is disposed and recreated lazily; the dashboard is
+     * rebuilt in place so its position and size are preserved. The tray menu is
+     * reinstalled because AWT menu labels cannot be changed after creation.</p>
+     */
+    private void rebuildForLanguageChange() {
+        try {
+            boolean settingsWasOpen = settingsStage != null && settingsStage.isShowing();
+            boolean dashboardWasVisible = dashboardStage != null && dashboardStage.isShowing();
+
+            if (settingsStage != null) {
+                settingsStage.close();
+                settingsStage = null;
+            }
+            if (dashboardStage != null) {
+                dashboardView = new DashboardView(dashboardViewModel);
+                dashboardView.setOnOpenSettings(this::showSettings);
+                dashboardView.setOnRefreshLocation(dashboardViewModel::refreshLocation);
+                dashboardStage.setScene(dashboardView.scene());
+                dashboardStage.setTitle(Messages.get("app.name"));
+            }
+            if (trayAvailable) {
+                trayIconManager.uninstall();
+                trayAvailable = installTray();
+            }
+            dashboardViewModel.refreshAll();
+            if (settingsWasOpen) {
+                showSettings();
+            }
+            if (dashboardWasVisible) {
+                dashboardStage.show();
+            }
+            LOG.info("Interface rebuilt after a language change");
+        } catch (RuntimeException e) {
+            LOG.error("Could not rebuild the interface after a language change", e);
+        }
     }
 
     /**
@@ -189,7 +234,7 @@ public class ApplicationController implements PrayerEventListener {
         if (settingsStage == null) {
             SettingsView settingsView = new SettingsView(settingsViewModel);
             settingsStage = new Stage();
-            settingsStage.setTitle("Salah Guardian - Settings");
+            settingsStage.setTitle(Messages.get("app.name") + " - " + Messages.get("settings.title"));
             settingsStage.setScene(settingsView.scene());
             settingsStage.setMinWidth(560);
             settingsStage.setMinHeight(600);
