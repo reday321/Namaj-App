@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Set;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -135,6 +137,11 @@ public class JsonConfigService implements ConfigService {
             LOG.info("No configuration at {} - starting with defaults", configFile);
             return new AppConfig().normalise();
         }
+        // Tighten on read, not only on write. A file left at 0664 by a version
+        // that predates SecureFiles would otherwise keep the user's coordinates
+        // group- and world-readable indefinitely, because a user who never
+        // changes a setting never triggers a save.
+        tightenExistingFile();
         try (Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
             AppConfig loaded = gson.fromJson(reader, AppConfig.class);
             if (loaded == null) {
@@ -149,6 +156,29 @@ public class JsonConfigService implements ConfigService {
         } catch (IOException e) {
             LOG.error("Unable to read configuration {} - using defaults", configFile, e);
             return new AppConfig().normalise();
+        }
+    }
+
+    /**
+     * Brings an existing configuration file up to {@code 0600}, and its parent
+     * directory to {@code 0700}, reporting only when something actually changed.
+     */
+    private void tightenExistingFile() {
+        try {
+            Set<PosixFilePermission> before = Files.getPosixFilePermissions(configFile);
+            if (before.equals(SecureFiles.OWNER_ONLY_FILE)) {
+                return;
+            }
+            if (SecureFiles.harden(configFile, SecureFiles.OWNER_ONLY_FILE)) {
+                LOG.info("Tightened permissions on {} - it held your coordinates at a mode "
+                        + "other users could read", configFile);
+            }
+            Path parent = configFile.getParent();
+            if (parent != null) {
+                SecureFiles.harden(parent, SecureFiles.OWNER_ONLY_DIRECTORY);
+            }
+        } catch (IOException | UnsupportedOperationException e) {
+            LOG.debug("Could not inspect permissions on {}", configFile, e);
         }
     }
 
@@ -168,10 +198,13 @@ public class JsonConfigService implements ConfigService {
         Path temp = null;
         try {
             if (parent != null) {
-                Files.createDirectories(parent);
+                SecureFiles.createPrivateDirectory(parent);
             }
             temp = configFile.resolveSibling(configFile.getFileName() + ".tmp");
-            try (Writer writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+            // The document holds the user's coordinates, so it is created 0600
+            // rather than chmod-ed afterwards: doing it afterwards would leave
+            // a window in which a home address sat at the ambient umask.
+            try (Writer writer = SecureFiles.newPrivateWriter(temp)) {
                 gson.toJson(toWrite, writer);
             }
             try {
@@ -182,6 +215,9 @@ public class JsonConfigService implements ConfigService {
                 LOG.debug("Atomic move unsupported on this filesystem, falling back", atomicUnsupported);
                 Files.move(temp, configFile, StandardCopyOption.REPLACE_EXISTING);
             }
+            // ATOMIC_MOVE preserves the temp file's mode, but a REPLACE_EXISTING
+            // fallback onto an older 0664 file does not, so confirm either way.
+            SecureFiles.harden(configFile, SecureFiles.OWNER_ONLY_FILE);
             LOG.debug("Configuration saved to {}", configFile);
         } catch (IOException e) {
             LOG.error("Failed to save configuration to {} - changes stay in memory only",
