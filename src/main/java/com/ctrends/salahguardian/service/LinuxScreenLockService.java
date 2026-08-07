@@ -137,6 +137,15 @@ public class LinuxScreenLockService implements ScreenLockService {
         resolve("loginctl").ifPresent(bin ->
                 commands.add(List.of(bin, "lock-session")));
 
+        // logind over plain D-Bus. Equivalent to `loginctl lock-session` but
+        // without needing the systemd package, which matters inside a snap
+        // where staging systemd is heavy and prone to breaking the build.
+        resolve("dbus-send").ifPresent(bin -> commands.add(List.of(bin,
+                "--system", "--type=method_call",
+                "--dest=org.freedesktop.login1",
+                "/org/freedesktop/login1/session/self",
+                "org.freedesktop.login1.Session.Lock")));
+
         resolve("busctl").ifPresent(bin -> commands.add(List.of(bin,
                 "--user", "call",
                 "org.gnome.ScreenSaver", "/org/gnome/ScreenSaver",

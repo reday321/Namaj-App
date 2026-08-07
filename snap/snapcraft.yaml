@@ -80,7 +80,7 @@ parts:
     plugin: nil
     source: .
     build-packages:
-      - openjdk-21-jdk-headless
+      - openjdk-21-jdk
       - fakeroot
       - binutils
     build-environment:
@@ -88,7 +88,7 @@ parts:
       - GRADLE_USER_HOME: ${CRAFT_PART_BUILD}/.gradle
     override-build: |
       set -eu
-      ./gradlew --no-daemon --offline=false jpackageAppImage
+      ./gradlew --no-daemon jpackageAppImage
       install -d "${CRAFT_PART_INSTALL}/opt/salah-guardian"
       cp -a build/jpackage/SalahGuardian/. "${CRAFT_PART_INSTALL}/opt/salah-guardian/"
 
@@ -111,7 +111,9 @@ parts:
       # Desktop entry and icons for the App Center listing and the app menu.
       install -Dm644 packaging/salah-guardian.desktop \
         "${CRAFT_PART_INSTALL}/usr/share/applications/salah-guardian.desktop"
-      sed -i 's|^Exec=.*|Exec=salah-guardian|; s|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/256x256/apps/salah-guardian.png|' \
+      # Desktop entries do not expand environment variables. snapcraft rewrites
+      # an absolute Icon path to point inside the snap, so give it one.
+      sed -i 's|^Exec=.*|Exec=salah-guardian|; s|^Icon=.*|Icon=/usr/share/icons/hicolor/256x256/apps/salah-guardian.png|' \
         "${CRAFT_PART_INSTALL}/usr/share/applications/salah-guardian.desktop"
       # The Settings desktop action refers to the same wrapper.
       sed -i 's|^Exec=/opt/salah-guardian/bin/SalahGuardian --settings|Exec=salah-guardian --settings|' \
@@ -132,9 +134,11 @@ parts:
       - libnotify-bin
       # gdbus, used to talk to GeoClue2 on the system bus.
       - libglib2.0-bin
-      # dbus-send and busctl, the screen-lock fallbacks after loginctl.
+      # dbus-send, which reaches logind and the screensaver interfaces on the
+      # bus directly. Deliberately not staging systemd for loginctl: it is a
+      # heavy dependency that regularly breaks snap builds, and the D-Bus call
+      # is the same operation.
       - dbus-bin
-      - systemd
       # xdg-screensaver, the last lock fallback.
       - xdg-utils
       # `which`, used to probe for optional binaries.
@@ -149,6 +153,3 @@ parts:
     prime:
       - -usr/share/doc
       - -usr/share/man
-      - -usr/lib/systemd/system
-      - -usr/lib/systemd/user
-      - -lib/systemd
